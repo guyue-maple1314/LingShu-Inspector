@@ -36,6 +36,7 @@ class GratingRunSample:
 class GratingRunResult:
     """单次钢格网运行评估结果。"""
     run_id: str = ""
+    has_data: bool = False        # 是否拿到实测步数/速度/里程；false 时不做阈值判定
     anomaly_rate: float = 0.0
     avg_speed: float = 0.0
     distance: float = 0.0
@@ -46,9 +47,13 @@ class GratingRunResult:
 
     @property
     def all_pass(self) -> bool:
-        return self.anomaly_rate_pass and self.avg_speed_pass and self.distance_pass
+        return (self.has_data and self.anomaly_rate_pass
+                and self.avg_speed_pass and self.distance_pass)
 
     def summary(self) -> str:
+        if not self.has_data:
+            return (f"[NO DATA] {self.run_id}: 未收到实测步数/速度/里程，"
+                    f"不做阈值判定（不虚构指标）")
         status = "PASS" if self.all_pass else "FAIL"
         return (
             f"[{status}] {self.run_id}: "
@@ -78,7 +83,7 @@ class GratingMetrics:
         self._current_run_id = run_id or f"run_{len(self._runs) + 1}"
 
     def record_sample(self, sample: GratingRunSample) -> None:
-        """记录一次采样（来自 C++ 节点的 /terrain_observation 反馈）。"""
+        """记录一次采样（来自 C++ 节点的 /grating_status 实测反馈）。"""
         if self._current is None:
             self.start_run()
         # 取最大值/累加
@@ -102,19 +107,21 @@ class GratingMetrics:
             return GratingRunResult()
 
         s = self._current
+        has_data = s.total_steps > 0
         anomaly_rate = (
-            s.anomaly_count / s.total_steps if s.total_steps > 0 else 1.0
+            s.anomaly_count / s.total_steps if has_data else 0.0
         )
 
         result = GratingRunResult(
             run_id=self._current_run_id,
+            has_data=has_data,
             anomaly_rate=anomaly_rate,
             avg_speed=s.avg_speed,
             distance=s.distance,
             max_vibration_rms=s.max_vibration_rms,
-            anomaly_rate_pass=anomaly_rate <= PPT_ANOMALY_RATE_TARGET,
-            avg_speed_pass=s.avg_speed >= PPT_MIN_AVG_SPEED,
-            distance_pass=s.distance >= PPT_MIN_DISTANCE,
+            anomaly_rate_pass=has_data and anomaly_rate <= PPT_ANOMALY_RATE_TARGET,
+            avg_speed_pass=has_data and s.avg_speed >= PPT_MIN_AVG_SPEED,
+            distance_pass=has_data and s.distance >= PPT_MIN_DISTANCE,
         )
         self._runs.append(result)
         self._current = None

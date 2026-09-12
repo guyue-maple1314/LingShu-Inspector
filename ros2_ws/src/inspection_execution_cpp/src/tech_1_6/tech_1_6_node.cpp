@@ -43,6 +43,11 @@ class Tech16Node : public rclcpp::Node {
     auto backend = std::make_shared<FakeLocalizerBackend>();
     backend->Initialize();
     localizer_ = std::make_unique<TightlyCoupledLocalizer>(backend);
+    RCLCPP_WARN(this->get_logger(),
+                "default localizer backend is a placeholder (FakeLocalizerBackend): "
+                "/fusion_pose carries deterministic zero-motion poses and a coarse "
+                "covariance, NOT a measured localization result. Inject a real backend "
+                "via SetLocalizerBackend before citing accuracy figures.");
 
     // 预设跨楼层示例路径（真实路径由上层规划器下发）
     std::vector<NavWaypoint> demo_path;

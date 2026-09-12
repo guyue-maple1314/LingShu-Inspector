@@ -5,4 +5,7 @@
 - mpc_vibration_controller：MPC 修正足端轨迹 / 关节扭矩
 - grating_metrics_recorder：记录步态异常 / 速度 / 里程
 
+状态与实测指标经 `/grating_status`（GratingStatus）以 10 Hz 输出；
+未注入适配器时 `valid=false`，上游不得据此评估指标。
+
 禁止 Python / HMI 进入本闭环。

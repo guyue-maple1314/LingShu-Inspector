@@ -10,6 +10,11 @@ namespace tech_1_9 {
 DirectionalBeamformer::DirectionalBeamformer(double mic_spacing_m, double speed_of_sound_mps)
     : mic_spacing_m_(mic_spacing_m), speed_of_sound_mps_(speed_of_sound_mps) {}
 
+double DirectionalBeamformer::MaxAliasFreeFrequencyHz() const {
+  if (mic_spacing_m_ <= 0.0) return 0.0;
+  return speed_of_sound_mps_ / (2.0 * mic_spacing_m_);
+}
+
 BeamResult DirectionalBeamformer::Beamform(const MultiChannelAudio& audio,
                                            double azimuth_rad) const {
   BeamResult result;

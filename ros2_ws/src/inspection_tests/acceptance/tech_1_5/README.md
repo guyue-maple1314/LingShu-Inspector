@@ -16,6 +16,9 @@
 - 平均速度 ≥ **0.8 m/s**
 - 单次巡检距离 ≥ **2 km**（2000 m）
 
+指标由 C++ 侧经 `/grating_status`（GratingStatus）实测输出（10 Hz），Python 只做
+任务级聚合与阈值判定；`valid=false` 表示尚无实测数据，不做达标判定。
+
 ## 必测场景
 详见 [scenarios.md](./scenarios.md)。
 

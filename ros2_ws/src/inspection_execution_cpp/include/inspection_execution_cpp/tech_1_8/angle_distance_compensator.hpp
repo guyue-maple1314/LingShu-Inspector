@@ -23,7 +23,11 @@ struct AngleDistanceCompensated {
 ///
 /// 执行 ±60°、1–5m 范围内的角度与距离补偿：
 ///   - 角度补偿：大角度下红外接收能量下降，需补偿
-///     简化模型：compensated = temp / cos(angle)（朗伯体近似）
+///     未标定阶段采用**有上限**的朗伯体近似：
+///       angle_factor = min(1 / cos(angle), max_angle_correction_factor)
+///     默认上限 1.10（角度修正最多 +10%）。直接取 1/cos 在 ±60° 时会把读数
+///     放大一倍，量纲上不成立且会掩盖真实误差，本项目实机标定完成前不上放；
+///     标定后可用 SetMaxAngleCorrectionFactor 调整上限。
 ///   - 距离补偿：远距离大气衰减，compensated = temp × correction_factor
 ///   - 修正系数 ∈ [0.95, 1.05] 由标定给出
 ///
@@ -35,11 +39,22 @@ struct AngleDistanceCompensated {
 ///   - 补偿在 C++ 执行（Python 不重复实现）
 class AngleDistanceCompensator {
  public:
+  /// 角度修正系数上限默认值（实机标定前不得放大）
+  static constexpr double kDefaultMaxAngleCorrectionFactor = 1.10;
+
   /// 角度 + 距离补偿
   AngleDistanceCompensated Compensate(const EmissivityCompensated& input);
 
+  /// 设置角度修正系数上限（必须 ≥ 1.0；标定完成后按实测调整）
+  void SetMaxAngleCorrectionFactor(double factor);
+
+  /// 当前角度修正系数上限
+  double MaxAngleCorrectionFactor() const;
+
  private:
   static double CosDeg(double angle_deg);  // 角度→cos
+
+  double max_angle_factor_{kDefaultMaxAngleCorrectionFactor};
 };
 
 }  // namespace tech_1_8

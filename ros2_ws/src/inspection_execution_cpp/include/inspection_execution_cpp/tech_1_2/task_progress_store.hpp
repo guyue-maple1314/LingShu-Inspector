@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -12,6 +13,7 @@ struct TaskProgress {
   std::string state;
 };
 
+/// 任务进度存储：Action 执行线程（可多个）写、resume 服务线程读，必须加锁。
 class TaskProgressStore {
  public:
   void Save(const std::string& task_id, const TaskProgress& progress);
@@ -21,6 +23,7 @@ class TaskProgressStore {
   std::size_t Size() const;
 
  private:
+  mutable std::mutex mtx_;
   std::unordered_map<std::string, TaskProgress> store_;
 };
 

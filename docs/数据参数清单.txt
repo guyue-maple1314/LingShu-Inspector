@@ -23,16 +23,17 @@ imu / foot_force / camera : best_effort + keep_last + depth 1（高频丢帧可�
 task                      : reliable + transient_local + depth 10（任务不可丢）
 event                     : reliable + volatile + depth 10
 
-【三】13 个消息的数据字段（inspection_interfaces/msg/）
+【三】14 个消息的数据字段（inspection_interfaces/msg/）
 ------------------------------------------------------------------------
 RobotState          pose / velocity / battery_level / current_gait / execution_state
 OperatorInstruction source(voice/text) / raw_content
-InspectionAlert     alert_type / detected_value / source_device / detection_pose
+InspectionAlert     alert_type / detected_value / source_device / detection_pose / pose_valid
 StructuredGoal      goal_id / task_type / target_pose / constraints / valid_until
 Task                task_id / task_type / status / risk / benefit / urgency / progress(0..1) / estimated_consumption(%)
 TaskDecision        current_task_id / ranked_task_ids / decision(EXECUTE|PREEMPT|RESUME|CHARGE|WAIT) / decision_time
 EnergyConstraint    battery_level / return_distance / estimated_consumption / estimated_return_consumption / base_safe_soc_percent / safe_soc
 TerrainObservation  terrain_type / pose / foot_contact[4] / velocity / confidence
+GratingStatus       terrain_type / grating_mode_active / valid / passable / confidence / accel_rms / max_vibration_rms / resonance_detected / total_steps / anomaly_count / anomaly_rate / avg_speed / distance_m
 CorridorState       corridor_width / centerline[] / left_boundary[] / right_boundary[] / visual_validation_passed / confidence
 FusionPose          pose(PoseWithCovariance) / valid_sources[] / localization_state
 SemanticAlarm       detection_event / physical_location / bim_id / slam_id / confidence
@@ -73,11 +74,16 @@ MPC 激活阈值    默认 Mild 及以上介入
 定位退化        有效源 < 2 判 Lost（kLostSourceThreshold）
                 三级状态：Healthy / Degraded / Lost
 
+── 1.2 任务生命周期（占位参数，实机接入后替换）──
+就绪信号假定    assume_robot_ready 默认 true（未接实机就绪信号时打印告警，不静默假设）
+任务进度步长    task_duration_sec 默认 2.0 s（骨架按时间均匀推进，非真实完成度）
+
 ── 1.7 语义地图与定位 ──
 栅格分辨率      5 cm（厘米级映射，kDefaultResolutionM）
 栅格融合权重    BIM 0.4 / SLAM 0.3 / 点云 0.3
 位置匹配半径    30 cm（kDefaultSearchRadiusM）
 置信度下限      0.3（低于判「未定位」，不虚构物理监测点）
+位置匹配前置    告警须带 pose_valid=true；false 时直接判「未定位」，不用默认零位姿匹配
 
 ── 1.8 动态红外测温 ──
 稳像曝光        8 ms（kDefaultExposureMs）
@@ -87,6 +93,7 @@ MPC 激活阈值    默认 Mild 及以上介入
 距离有效域      1 ~ 5 m
 辐射率有效域    0.01 ~ 1.0（物理下限 >0）
 修正系数域      0.95 ~ 1.05
+角度修正上限    1.10（kDefaultMaxAngleCorrectionFactor；未标定前不放大约 1/cos）
 
 ── 1.9 定向声纹诊断 ──
 麦克风数量      8 路（kNumMicrophones）
@@ -110,9 +117,10 @@ foot_fl / foot_fr / foot_rl / foot_rr
 
 【七】Topic / Service / Action 总表（topics.yaml）
 ------------------------------------------------------------------------
-Topic（13）:
+Topic（14）:
   /robot_state /operator_instruction /inspection_alert /structured_goal
   /task /energy_constraint /task_decision /terrain_observation
+  /grating_status
   /corridor_state /fusion_pose /semantic_alarm /thermal_measurement
   /acoustic_diagnosis
 Service（2）: /validate_goal /resume_task

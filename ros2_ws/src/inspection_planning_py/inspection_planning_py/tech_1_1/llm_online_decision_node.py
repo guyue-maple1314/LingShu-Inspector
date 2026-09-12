@@ -1,6 +1,8 @@
 """1.1 大模型在线决策节点：多源状态理解，生成结构化目标。"""
 
 import time
+import threading
+from collections import deque
 from typing import Any, Dict
 
 import rclpy
@@ -38,9 +40,12 @@ class LlmOnlineDecisionNode(Node):
         self._llm: LlmClient = self._make_llm(backend)
 
         self._latest_robot_state = None
-        self._alerts = []
+        # 告警只保留最近 N 条：避免长期运行内存与提示词无界增长
+        self._alerts = deque(maxlen=50)
         self._latest_instruction = None
         self._metrics = DecisionMetrics()
+        # MultiThreadedExecutor 下告警/指令回调可能并发进入决策，串行化
+        self._decision_lock = threading.Lock()
 
         self.create_subscription(RobotState, ROBOT_STATE, self._on_robot_state, 10)
         self.create_subscription(InspectionAlert, INSPECTION_ALERT, self._on_alert, 10)
@@ -72,18 +77,19 @@ class LlmOnlineDecisionNode(Node):
         self._maybe_decide("instruction")
 
     def _maybe_decide(self, trigger: str) -> None:
-        start = time.monotonic()
-        context = build_decision_context(
-            self._latest_robot_state, self._alerts, self._latest_instruction
-        )
-        goal = self._llm.generate_goal(context)
-        ok, _ = validate_goal_schema(goal) if goal is not None else (False, "no goal")
-        latency_ms = (time.monotonic() - start) * 1000.0
-        self._metrics.record(ok, latency_ms)
-        if not ok:
-            self.get_logger().warning(f"LLM produced invalid goal: {goal}")
-            return
-        self._publish_goal(goal)
+        with self._decision_lock:
+            start = time.monotonic()
+            context = build_decision_context(
+                self._latest_robot_state, list(self._alerts), self._latest_instruction
+            )
+            goal = self._llm.generate_goal(context)
+            ok, _ = validate_goal_schema(goal) if goal is not None else (False, "no goal")
+            latency_ms = (time.monotonic() - start) * 1000.0
+            self._metrics.record(ok, latency_ms)
+            if not ok:
+                self.get_logger().warning(f"LLM produced invalid goal: {goal}")
+                return
+            self._publish_goal(goal)
 
     def _publish_goal(self, goal: Dict[str, Any]) -> None:
         msg = StructuredGoal()

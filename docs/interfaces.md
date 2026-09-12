@@ -13,7 +13,8 @@ Topic 用连续状态，Service 用短时查询/校验，Action 用可抢占长�
 | `/task` | `Task` | Python 任务池 | C++、JS | 事件 | Reliable | 1.2 |
 | `/energy_constraint` | `EnergyConstraint` | Python 能耗评估 | C++、JS | 事件 | Reliable | 1.2 |
 | `/task_decision` | `TaskDecision` | Python 调度器 | C++、JS | 事件 | Reliable | 1.2 |
-| `/terrain_observation` | `TerrainObservation` | C++ 感知 | Python、C++ | 周期 | Sensor Data | 1.3/1.5 |
+| `/terrain_observation` | `TerrainObservation` | C++ 感知 | Python、C++ | 周期 | Sensor Data | 1.3 |
+| `/grating_status` | `GratingStatus` | C++ 1.5 抑振 | Python、JS | 10 Hz | Sensor Data | 1.5 |
 | `/corridor_state` | `CorridorState` | C++ 融合 | Python、JS | 周期 | Sensor Data | 1.4 |
 | `/fusion_pose` | `FusionPose` | C++ 定位 | Python、JS | 周期 | Sensor Data | 1.6 |
 | `/semantic_alarm` | `SemanticAlarm` | C++ 定位 | JS | 事件 | Reliable | 1.7 |
@@ -30,6 +31,8 @@ Topic 用连续状态，Service 用短时查询/校验，Action 用可抢占长�
 | `EnergyConstraint` | `estimated_return_consumption` | 预计返航耗电（%） |
 | `EnergyConstraint` | `base_safe_soc_percent` | 固定安全电量基准，默认 30% |
 | `EnergyConstraint` | `safe_soc` | 动态安全阈值 `max(30%, 预计返航耗电 + 10 个百分点)` |
+| `InspectionAlert` | `pose_valid` | 检测位姿是否有效；`false` 时 1.7 不做位置匹配，保持未定位 |
+| `GratingStatus` | `valid` | 是否已有实测数据；`false` 时异常率/速度/里程无意义，不得据此评估 |
 
 `SOC <= safe_soc` 时调度器输出 `TaskDecision.decision = CHARGE`：保存当前任务进度、停止启动新的普通巡检/采集任务并返航充电。30% 是调度层临时阈值，不是 BMS 硬件欠压保护值。
 

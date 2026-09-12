@@ -88,7 +88,9 @@ class ThermalAnomalyDecisionNode(Node):  # type: ignore[misc]
             alert.alert_type = "thermal_anomaly"
             alert.source_device = "thermal_1_8"
             alert.detected_value = msg.compensated_temperature
-            alert.detection_pose.position.x = 0.0  # 由 1.7 语义地图补位置
+            # 本节点拿不到目标相对位置（无方位信息），显式标记位姿无效：
+            # 由 1.7 判定为"未定位"，不得用默认零位姿做位置匹配（红线）
+            alert.pose_valid = False
             self._alert_pub.publish(alert)
 
     def _periodic_report(self) -> None:

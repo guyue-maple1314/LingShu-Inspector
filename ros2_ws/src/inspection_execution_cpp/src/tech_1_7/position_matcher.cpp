@@ -51,6 +51,15 @@ PositionMatchResult PositionMatcher::Match(const DetectionEvent& event,
   result.event_id = event.event_id;
   result.timestamp_ns = event.timestamp_ns;
 
+  // 红线：告警未带有效位姿（如红外/声纹只给类别不给位置）时不做位置匹配，
+  //       直接保持"未定位"，避免用默认零位姿匹配出假物理监测点。
+  if (!event.valid) {
+    result.coordinate_source = "unlocalized";
+    result.confidence = 0.0;
+    result.localized = false;
+    return result;
+  }
+
   const GridCell* best = nullptr;
   if (!FindBestCell(event, grid, &best) || best == nullptr) {
     // 红线：无法对应时保持"未定位"

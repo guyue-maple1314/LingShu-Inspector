@@ -5,7 +5,7 @@
 #include <thread>
 
 #include "rclcpp/rclcpp.hpp"
-#include "inspection_interfaces/msg/terrain_observation.hpp"
+#include "inspection_interfaces/msg/grating_status.hpp"
 
 #include "inspection_execution_cpp/adapters/foot_force_adapter.hpp"
 #include "inspection_execution_cpp/adapters/imu_adapter.hpp"
@@ -23,12 +23,13 @@ namespace tech_1_5 {
 /// 钢格网主动抑振节点
 ///
 /// 架构（遵守设计文档实时约束）：
-/// - ROS2 订阅 /imu(1000Hz)、/foot_force(500Hz) 在主 executor 回调中
-///   将数据存入线程安全缓冲（最新值覆盖旧值）。
+/// - IMU(1000Hz) / 足端力(500Hz) 通过注入的 ImuAdapter / FootForceAdapter
+///   直读，不经过 ROS 话题（原始传感器话题由上层适配器负责）。
 /// - 独立 std::thread 运行高频控制循环（500Hz 基准）：
-///   读取缓冲 → FootContactEstimator → VibrationEstimator → MpcVibrationController
+///   读取适配器 → FootContactEstimator → VibrationEstimator → MpcVibrationController
 ///   → ApplyCorrection → RobotSdkAdapter::SendJointCommand
-/// - 高频线程不阻塞在 ROS2 通信上；Python/HMI 通过 /grating_status 获取状态。
+/// - 高频线程不阻塞在 ROS2 通信上；Python/HMI 通过 /grating_status
+///   (GratingStatus) 获取状态与实测指标。
 ///
 /// 适配器注入式设计（与 1.3 同理，不直调厂商 SDK）：
 /// - FootForceAdapter / ImuAdapter 由上层注入
@@ -44,8 +45,8 @@ class Tech15Node : public rclcpp::Node {
 
     // 创建发布器
     grating_status_pub_ =
-        this->create_publisher<inspection_interfaces::msg::TerrainObservation>(
-            topic_names::kTerrainObservation, 10);
+        this->create_publisher<inspection_interfaces::msg::GratingStatus>(
+            topic_names::kGratingStatus, 10);
 
     // 创建低频状态发布定时器（10Hz，不影响高频环）
     status_timer_ = this->create_wall_timer(
@@ -196,13 +197,28 @@ class Tech15Node : public rclcpp::Node {
 
   // 低频状态发布（10Hz，不影响控制环）
   void PublishStatus() {
-    auto msg = inspection_interfaces::msg::TerrainObservation();
+    auto msg = inspection_interfaces::msg::GratingStatus();
     const auto metrics = metrics_recorder_.Snapshot();
     const auto vibration = vibration_estimator_.Estimate();
 
+    msg.header.stamp = this->now();
+    msg.grating_mode_active = grating_mode_.load();
     msg.terrain_type = grating_mode_.load() ? "grating" : "solid";
+    // 只有拿到实测数据才对外给出通过性结论；否则 valid=false，不虚构
+    const bool has_measurement = vibration.timestamp_ns != 0 || metrics.total_steps > 0;
+    msg.valid = has_measurement;
     msg.passable = !vibration.resonance_detected;
-    msg.confidence = 1.0 - std::min(1.0, vibration.accel_rms / 10.0);
+    msg.confidence = has_measurement
+                         ? 1.0 - std::min(1.0, vibration.accel_rms / 10.0)
+                         : 0.0;
+    msg.accel_rms = vibration.accel_rms;
+    msg.max_vibration_rms = metrics.max_vibration_rms;
+    msg.resonance_detected = vibration.resonance_detected;
+    msg.total_steps = metrics.total_steps;
+    msg.anomaly_count = metrics.anomaly_count;
+    msg.anomaly_rate = metrics.anomaly_rate;
+    msg.avg_speed = metrics.avg_speed;
+    msg.distance_m = metrics.total_distance;
 
     grating_status_pub_->publish(msg);
   }
@@ -224,7 +240,7 @@ class Tech15Node : public rclcpp::Node {
   std::thread control_thread_;
 
   // ROS2 接口
-  rclcpp::Publisher<inspection_interfaces::msg::TerrainObservation>::SharedPtr
+  rclcpp::Publisher<inspection_interfaces::msg::GratingStatus>::SharedPtr
       grating_status_pub_;
   rclcpp::TimerBase::SharedPtr status_timer_;
 };

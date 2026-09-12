@@ -14,6 +14,14 @@ TaskLifecycleExecutor::TaskLifecycleExecutor(const rclcpp::NodeOptions& options)
     : Node(node_names::kTaskLifecycleExecutorNode, options) {
   using namespace std::placeholders;
 
+  // 实机就绪信号与真实任务进度尚未接入：用参数显式占位，默认值不等于真实结论
+  declare_parameter("assume_robot_ready", true);
+  declare_parameter("task_duration_sec", 2.0);
+  assume_robot_ready_ = get_parameter("assume_robot_ready").as_bool();
+  const double duration = get_parameter("task_duration_sec").as_double();
+  // 反馈周期固定 10 Hz（与 Execute() 里的 rclcpp::Rate 一致）
+  progress_increment_ = duration > 0.0 ? (0.1 / duration) : 0.05;
+
   action_server_ = rclcpp_action::create_server<ExecuteTask>(
       this, topic_names::kExecuteTaskAction,
       std::bind(&TaskLifecycleExecutor::HandleGoal, this, _1, _2),
@@ -39,7 +47,14 @@ rclcpp_action::GoalResponse TaskLifecycleExecutor::HandleGoal(
                           static_cast<double>(goal->goal.valid_until.nanosec) * 1e-9;
   input.now_sec = static_cast<double>(now().seconds()) +
                   static_cast<double>(now().nanoseconds()) * 1e-9;
-  input.robot_ready = true;
+  input.robot_ready = assume_robot_ready_;
+  if (assume_robot_ready_ && !readiness_warning_logged_) {
+    readiness_warning_logged_ = true;
+    RCLCPP_WARN(get_logger(),
+                "robot readiness signal is not wired yet; goal validation uses "
+                "assume_robot_ready=true (placeholder, set it false to require a "
+                "real readiness signal)");
+  }
   input.constraints = goal->goal.constraints;
 
   const tech_1_1::GoalSafetyResult result = validator_.Validate(input);
@@ -80,7 +95,8 @@ void TaskLifecycleExecutor::Execute(const std::shared_ptr<GoalHandle> goal_handl
       return;
     }
 
-    progress += 0.05;
+    // 骨架实现：按 task_duration_sec 均匀推进，代表"执行中"而非真实完成度
+    progress += progress_increment_;
     feedback->progress = progress;
     feedback->current_state = "running";
     goal_handle->publish_feedback(feedback);

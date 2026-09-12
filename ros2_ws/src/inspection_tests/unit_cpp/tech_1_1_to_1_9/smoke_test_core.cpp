@@ -661,6 +661,17 @@ int main() {
     assert(unlocalized.confidence == 0.0 || unlocalized.confidence < matcher.kMinConfidence);
     assert(unlocalized.coordinate_source == "unlocalized");
 
+    // 红线：告警未携带有效位姿（pose_valid=false）→ 不做位置匹配
+    tech_1_7::DetectionEvent no_pose;
+    no_pose.event_id = "alert_no_pose";
+    no_pose.detection_x = 0.1;
+    no_pose.detection_y = 0.1;
+    no_pose.valid = false;
+    auto no_pose_result = matcher.Match(no_pose, grid);
+    assert(!no_pose_result.localized);
+    assert(no_pose_result.confidence == 0.0);
+    assert(no_pose_result.coordinate_source == "unlocalized");
+
     // 批量匹配
     std::vector<tech_1_7::DetectionEvent> events;
     tech_1_7::DetectionEvent e1; e1.event_id = "e1";
@@ -861,14 +872,28 @@ int main() {
     assert(out.valid);
     assert(out.error_state == "ok");
     // compensated = 100 / cos(30°) * 1.0 ≈ 100 / 0.8660254 ≈ 115.470
-    assert(std::abs(out.compensated_temperature - 100.0 / 0.8660254) < 0.01);
+    // 角度修正有上限：30° 时 1/cos≈1.1547 → 钳到默认上限 1.10
+    assert(std::abs(comp.MaxAngleCorrectionFactor() - 1.10) < 1e-9);
+    assert(std::abs(out.compensated_temperature - 110.0) < 0.01);
 
     // 距离补偿：correction_factor=1.05
     in.correction_factor = 1.05;
     auto out2 = comp.Compensate(in);
     assert(out2.valid);
-    assert(std::abs(out2.compensated_temperature -
-                    (100.0 / 0.8660254) * 1.05) < 0.01);
+    assert(std::abs(out2.compensated_temperature - 100.0 * 1.10 * 1.05) < 0.01);
+
+    // 60° 时 1/cos=2.0，仍受同一上限约束（未标定不放大约 2 倍）
+    in.correction_factor = 1.0;
+    in.angle = 60.0;
+    auto out3 = comp.Compensate(in);
+    assert(out3.valid);
+    assert(std::abs(out3.compensated_temperature - 110.0) < 0.01);
+
+    // 实机标定后可放宽上限
+    comp.SetMaxAngleCorrectionFactor(2.0);
+    auto out4 = comp.Compensate(in);
+    assert(out4.valid);
+    assert(std::abs(out4.compensated_temperature - 200.0) < 0.01);
 
     // 红线：输入无效 → input_invalid
     in.valid = false;

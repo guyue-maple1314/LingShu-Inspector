@@ -1,10 +1,13 @@
 """钢格网运动监督节点（任务级，不参与 500/1000Hz 控制环）。
 
 职责：
-- 订阅 /terrain_observation 获取 C++ 节点的钢格网状态反馈
+- 订阅 /grating_status（GratingStatus）获取 C++ 节点的实测状态与指标
 - 选择钢格网运行目标（进入/退出钢格网模式、设定目标速度）
 - 聚合运行指标并评估 PPT 阈值（异常率 -85%、均速 ≥0.8 m/s、2km）
 - 不进入高频控制环，不阻塞 C++ MPC 回路
+
+红线：本节点只使用 C++ 侧实测字段；没有实测数据时不做阈值判定，
+      既不虚构速度/距离，也不把"无数据"算成达标。
 """
 
 from __future__ import annotations
@@ -12,10 +15,10 @@ from __future__ import annotations
 import rclpy
 from rclpy.node import Node
 
-from inspection_interfaces.msg import TerrainObservation
+from inspection_interfaces.msg import GratingStatus
 
 from inspection_planning_py.common.node_names import GRATING_MOTION_SUPERVISOR_NODE
-from inspection_planning_py.common.topic_names import TERRAIN_OBSERVATION
+from inspection_planning_py.common.topic_names import GRATING_STATUS
 from inspection_planning_py.tech_1_5.grating_metrics import (
     GratingMetrics,
     GratingRunSample,
@@ -32,9 +35,12 @@ class GratingMotionSupervisorNode(Node):
 
         self._metrics = GratingMetrics()
         self._metrics.start_run("supervised_run")
+        self._last_total_steps = 0
+        self._last_anomaly_count = 0
+        self._no_data_count = 0
 
         self.create_subscription(
-            TerrainObservation, TERRAIN_OBSERVATION, self._on_status, 10
+            GratingStatus, GRATING_STATUS, self._on_status, 10
         )
 
         # 低频状态打印（1Hz）
@@ -45,26 +51,40 @@ class GratingMotionSupervisorNode(Node):
             "not in 500/1000Hz control loop"
         )
 
-    def _on_status(self, msg: TerrainObservation) -> None:
-        """接收 C++ 节点的钢格网状态反馈。
+    def _on_status(self, msg: GratingStatus) -> None:
+        """接收 C++ 节点的实测状态与指标。
 
-        TerrainObservation 字段：
+        GratingStatus 字段：
         - header.stamp: 时间戳
-        - terrain_type: 地形类型（grating 表示钢格网）
-        - foot_contact[]: 足端接触状态
-        - confidence: 观测置信度
+        - valid: 是否已有实测数据（false 时下列指标无意义）
+        - terrain_type / grating_mode_active / passable / confidence
+        - accel_rms / max_vibration_rms / resonance_detected
+        - total_steps / anomaly_count / anomaly_rate / avg_speed / distance_m
         """
         ts = msg.header.stamp
         timestamp_ns = ts.sec * 1_000_000_000 + ts.nanosec
-        # 是否检测到共振：钢格网地形 + 置信度低（近似振动异常）
-        is_grating = (msg.terrain_type == "grating")
-        low_confidence = float(msg.confidence) < 0.5
+
+        # 红线：没有实测数据（未注入适配器 / 控制环未产生步数）时不记录、不评估
+        if not msg.valid:
+            self._no_data_count += 1
+            return
+
+        # C++ 侧给的是累计值：步数与异常数转为增量，距离取累计最大值
+        total_steps = int(msg.total_steps)
+        anomaly_count = int(msg.anomaly_count)
+        delta_steps = max(0, total_steps - self._last_total_steps)
+        delta_anomalies = max(0, anomaly_count - self._last_anomaly_count)
+        self._last_total_steps = total_steps
+        self._last_anomaly_count = anomaly_count
+
         sample = GratingRunSample(
             timestamp_ns=timestamp_ns,
-            avg_speed=float(self.get_parameter("target_speed").value),
-            distance=0.0,  # 由 C++ 侧 GratingMetricsRecorder 累计
-            resonance_detected=is_grating and low_confidence,
-            max_vibration_rms=1.0 - float(msg.confidence) if is_grating else 0.0,
+            anomaly_count=delta_anomalies,
+            total_steps=delta_steps,
+            avg_speed=float(msg.avg_speed),
+            distance=float(msg.distance_m),
+            max_vibration_rms=float(msg.max_vibration_rms),
+            resonance_detected=bool(msg.resonance_detected),
         )
         self._metrics.record_sample(sample)
 
@@ -77,7 +97,9 @@ class GratingMotionSupervisorNode(Node):
         self.get_logger().info(
             f"[grating_supervisor] distance={cur.distance:.1f}m, "
             f"steps={cur.total_steps}, anomalies={cur.anomaly_count}, "
-            f"max_vib={cur.max_vibration_rms:.2f}"
+            f"avg_speed={cur.avg_speed:.2f}m/s, "
+            f"max_vib={cur.max_vibration_rms:.2f}, "
+            f"no_data_msgs={self._no_data_count}"
         )
 
     def finish_and_report(self) -> str:

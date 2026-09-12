@@ -35,6 +35,7 @@ from .semantic_location_metrics import (
     LocationMappingSample,
     SemanticLocationMetrics,
 )
+from inspection_planning_py.common.topic_names import FUSION_POSE, SEMANTIC_ALARM
 
 
 class SemanticAnnotationNode(Node):  # type: ignore[misc]
@@ -55,9 +56,9 @@ class SemanticAnnotationNode(Node):  # type: ignore[misc]
             return
 
         self._alarm_sub = self.create_subscription(
-            SemanticAlarm, "/semantic_alarm", self._on_alarm, 10)
+            SemanticAlarm, SEMANTIC_ALARM, self._on_alarm, 10)
         self._fusion_sub = self.create_subscription(
-            FusionPose, "/fusion_pose", self._on_fusion, 10)
+            FusionPose, FUSION_POSE, self._on_fusion, 10)
         self._report_timer = self.create_timer(1.0, self._periodic_report)
 
     def _on_fusion(self, msg) -> None:

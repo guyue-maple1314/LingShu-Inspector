@@ -20,6 +20,7 @@ set(msg_files
   "msg/EnergyConstraint.msg"
   "msg/TaskDecision.msg"
   "msg/TerrainObservation.msg"
+  "msg/GratingStatus.msg"
   "msg/CorridorState.msg"
   "msg/FusionPose.msg"
   "msg/SemanticAlarm.msg"

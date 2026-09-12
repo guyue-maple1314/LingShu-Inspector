@@ -141,7 +141,9 @@ class Tech17Node : public rclcpp::Node {
     ev.detection_z = msg.detection_pose.position.z;
     ev.timestamp_ns = static_cast<std::uint64_t>(msg.header.stamp.nanosec) +
         static_cast<std::uint64_t>(msg.header.stamp.sec) * 1000000000ULL;
-    ev.valid = true;
+    // 位姿是否可用由消息显式声明（InspectionAlert.pose_valid）：
+    // 未携带有效位姿的告警不做位置匹配，只发布"未定位"（红线）
+    ev.valid = msg.pose_valid;
     pending_events_.push_back(ev);
   }
 
