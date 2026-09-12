@@ -13,9 +13,9 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="青岛港湾职业技术学院 灵枢智行团队",
-    maintainer_email="lszx_byc@qdgw.edu.cn",
+    maintainer_email="xyt1351325@hotmail.com",
     author="青岛港湾职业技术学院 灵枢智行团队",
-    author_email="lszx_byc@qdgw.edu.cn",
+    author_email="xyt1351325@hotmail.com",
     description="Python planning and decision layer for the quadruped inspection robot "
     "(c) 2026 qdgw / lszx_byc, all rights reserved.",
     license="proprietary",
