@@ -1,0 +1,19 @@
+planning:
+  ros__parameters:
+    decision_time_budget_ms: 500
+    goal_validity_ms: 500
+
+llm_online_decision_node:
+  ros__parameters:
+    llm_backend: deepseek
+    llm_model: deepseek-chat
+    llm_timeout_sec: 30.0
+
+energy_constraint_node:
+  ros__parameters:
+    return_distance_m: 0.0
+    estimated_consumption_percent: 0.0
+
+preemption_scheduler_node:
+  ros__parameters:
+    scheduler_period_sec: 0.1

@@ -1,0 +1,11 @@
+# 参考 ROS2 参数模板（当前 launch 使用内联 parameters，此文件供参数文件加载模式参考）
+# 参数名与各节点 declare_parameter() 对应
+safety_validation:
+  ros__parameters:
+    corridor_min_width_m: 0.46
+    thermal_angle_deg_min: -60.0
+    thermal_angle_deg_max: 60.0
+    thermal_distance_min_m: 1.0
+    thermal_distance_max_m: 5.0
+    thermal_correction_factor_min: 0.95
+    thermal_correction_factor_max: 1.05

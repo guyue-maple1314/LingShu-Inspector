@@ -1,0 +1,31 @@
+acceptance_thresholds:
+  tech_1_1:
+    structured_goal_success_rate: 0.95
+    abnormal_switch_max_ms: 500
+  tech_1_2:
+    multi_task_success_rate: 0.923
+    preemption_max_ms: 500
+  tech_1_3:
+    complex_terrain_pass_rate: 0.90
+    sim_to_real_success_rate: 0.968
+  tech_1_4:
+    robot_width_cm: 46
+    corridor_width_cm: 75
+  tech_1_5:
+    gait_abnormal_reduction: 0.85
+    avg_speed_mps: 0.8
+    single_mission_km: 2.0
+  tech_1_6:
+    localization_accuracy_cm: 2.0
+  tech_1_7:
+    location_report_accuracy: 0.98
+  tech_1_8:
+    static_temperature_error_c: 0.2
+    dynamic_temperature_error_c: 0.5
+    angle_range_deg: [-60.0, 60.0]
+    distance_range_m: [1.0, 5.0]
+    correction_factor_range: [0.95, 1.05]
+  tech_1_9:
+    background_noise_db: 85.0
+    snr_range_db: [15.0, 20.0]
+    fault_accuracy: 0.75

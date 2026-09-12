@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<root BTCPP_format="4">
+  <BehaviorTree ID="MainInspectionTree">
+    <Sequence name="main_inspection_root">
+      <ValidateGoal
+        goal_id="{goal_id}"
+        task_type="{task_type}"
+        valid_until_sec="{valid_until_sec}"
+        now_sec="{now_sec}"
+        robot_ready="{robot_ready}"
+        goal_valid="{goal_valid}"/>
+      <ExecuteTask goal_id="{goal_id}" progress="{progress}" current_state="{current_state}"/>
+    </Sequence>
+  </BehaviorTree>
+</root>

@@ -1,0 +1,9 @@
+# 动态测温输出（1.8）
+std_msgs/Header header
+float64 raw_temperature
+float64 compensated_temperature
+float64 angle
+float64 distance
+float64 emissivity
+float64 correction_factor
+string error_state

@@ -1,0 +1,8 @@
+devices:
+  robot_sdk: { model: "", driver: "", connection: "" }
+  lidar: { model: "", driver: "", topic: /lidar_scan }
+  imu: { model: "", driver: "", topic: /imu, rate_hz: 1000 }
+  foot_force: { model: "", driver: "", topic: /foot_force, rate_hz: 500 }
+  camera: { model: "", driver: "", topic: /image, fps: 30 }
+  thermal: { model: "", driver: "", topic: /thermal_image, fps: 30 }
+  microphone_array: { model: "", driver: "", channels: 8 }

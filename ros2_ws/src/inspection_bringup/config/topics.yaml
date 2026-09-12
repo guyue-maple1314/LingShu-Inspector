@@ -1,0 +1,22 @@
+topics:
+  robot_state: { name: /robot_state, type: inspection_interfaces/msg/RobotState }
+  operator_instruction: { name: /operator_instruction, type: inspection_interfaces/msg/OperatorInstruction }
+  inspection_alert: { name: /inspection_alert, type: inspection_interfaces/msg/InspectionAlert }
+  structured_goal: { name: /structured_goal, type: inspection_interfaces/msg/StructuredGoal }
+  task: { name: /task, type: inspection_interfaces/msg/Task }
+  energy_constraint: { name: /energy_constraint, type: inspection_interfaces/msg/EnergyConstraint }
+  task_decision: { name: /task_decision, type: inspection_interfaces/msg/TaskDecision }
+  terrain_observation: { name: /terrain_observation, type: inspection_interfaces/msg/TerrainObservation }
+  corridor_state: { name: /corridor_state, type: inspection_interfaces/msg/CorridorState }
+  fusion_pose: { name: /fusion_pose, type: inspection_interfaces/msg/FusionPose }
+  semantic_alarm: { name: /semantic_alarm, type: inspection_interfaces/msg/SemanticAlarm }
+  thermal_measurement: { name: /thermal_measurement, type: inspection_interfaces/msg/ThermalMeasurement }
+  acoustic_diagnosis: { name: /acoustic_diagnosis, type: inspection_interfaces/msg/AcousticDiagnosis }
+
+services:
+  validate_goal: { name: /validate_goal, type: inspection_interfaces/srv/ValidateGoal }
+  resume_task: { name: /resume_task, type: inspection_interfaces/srv/ResumeTask }
+
+actions:
+  execute_task: { name: /execute_task, type: inspection_interfaces/action/ExecuteTask }
+  navigate_goal: { name: /navigate_goal, type: inspection_interfaces/action/NavigateGoal }

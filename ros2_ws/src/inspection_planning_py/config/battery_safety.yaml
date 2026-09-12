@@ -1,0 +1,11 @@
+# 1.2 调度参数：30% 基准与动态返航余量
+# 注意：30% 是任务调度层临时返航阈值，不是 BMS 硬件欠压保护值；
+#       实机完成最不利地形/最大负载/最长返航路线标定前不得调低。
+battery_safety:
+  base_safe_soc_percent: 30            # 固定安全电量基准（%）
+  return_reserve_percent_points: 10    # 返航额外余量（10 个百分点）
+  # 动态安全阈值：safe_soc = max(base_safe_soc, 预计返航耗电 + return_reserve)
+  # 单位距离耗电（%/m），按实机近期数据标定；此处为保守初值
+  consumption_per_meter_percent: 0.01
+  # provisional = 临时候选值，实机标定后才能转正式
+  policy_status: provisional_until_real_robot_calibration

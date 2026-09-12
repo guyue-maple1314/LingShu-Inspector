@@ -1,0 +1,4 @@
+StructuredGoal goal
+---
+bool allowed
+string rejection_reason

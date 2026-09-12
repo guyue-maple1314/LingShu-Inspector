@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>inspection_interfaces</name>
+  <version>0.1.0</version>
+  <description>Shared ROS 2 message, service and action definitions for the quadruped inspection robot.</description>
+  <maintainer email="lszx_byc@qdgw.edu.cn">青岛港湾职业技术学院 灵枢智行团队</maintainer>
+  <author>青岛港湾职业技术学院 灵枢智行团队 (qdgw / lszx_byc)</author>
+  <license>proprietary</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <build_depend>builtin_interfaces</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>rosidl_default_generators</build_depend>
+
+  <exec_depend>builtin_interfaces</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

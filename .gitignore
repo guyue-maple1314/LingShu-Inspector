@@ -1,0 +1,144 @@
+# ================ ROS 2 Workspace ================
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+ros2_ws/**/*.pyc
+ros2_ws/**/__pycache__/
+
+# ================ Python ================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-wheel-metadata/
+
+# Virtual Envs
+.venv/
+venv/
+ENV/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# mypy / pytest
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ================ C++ / CMake ================
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+_build/
+_build_*/
+cmake-build-*/
+out/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.exe
+*.out
+*.app
+
+# ================ Node.js / JavaScript ================
+node_modules/
+dist/
+build-js/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+
+# ================ Models & Large Data (keep directory structure) ================
+ros2_ws/src/inspection_planning_py/models/ppo/*.pt
+ros2_ws/src/inspection_planning_py/models/ppo/*.pth
+ros2_ws/src/inspection_planning_py/models/ppo/*.onnx
+ros2_ws/src/inspection_planning_py/models/ppo/*.bin
+ros2_ws/src/inspection_planning_py/models/acoustic/*.pt
+ros2_ws/src/inspection_planning_py/models/acoustic/*.pth
+ros2_ws/src/inspection_planning_py/models/acoustic/*.onnx
+ros2_ws/src/inspection_planning_py/models/acoustic/*.bin
+
+# Test fixtures large data (keep structure)
+ros2_ws/src/inspection_tests/fixtures/pointcloud/*.pcd
+ros2_ws/src/inspection_tests/fixtures/pointcloud/*.ply
+ros2_ws/src/inspection_tests/fixtures/thermal/*.png
+ros2_ws/src/inspection_tests/fixtures/thermal/*.raw
+ros2_ws/src/inspection_tests/fixtures/acoustic/*.wav
+ros2_ws/src/inspection_tests/fixtures/acoustic/*.mp3
+ros2_ws/src/inspection_tests/fixtures/messages/*.bag
+ros2_ws/src/inspection_tests/fixtures/messages/*.db3
+
+# ================ IDE / Editor ================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/c_cpp_properties.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.cproject
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ================ OS ================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ================ ROS Logs ================
+.ros/
+ros2_ws/logs/
+*.log
+
+# ================ Temporary ================
+tmp/
+temp/
+*.tmp
+*.bak
+*.old
+
+# ================ 本地工具状态（不提交） ================
+.codex/
+.agents/

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>inspection_planning_py</name>
+  <version>0.1.0</version>
+  <description>Python planning and decision layer (LLM goals, task scheduling, PPO training, diagnosis) for the quadruped inspection robot.</description>
+  <maintainer email="lszx_byc@qdgw.edu.cn">青岛港湾职业技术学院 灵枢智行团队</maintainer>
+  <author>青岛港湾职业技术学院 灵枢智行团队 (qdgw / lszx_byc)</author>
+  <license>proprietary</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>builtin_interfaces</exec_depend>
+  <exec_depend>inspection_interfaces</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

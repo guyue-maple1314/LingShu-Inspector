@@ -1,0 +1,16 @@
+# 参考 ROS2 参数模板（当前 launch 使用内联 parameters，此文件供参数文件加载模式参考）
+# 参数名与各节点 declare_parameter() 对应；如需启用，在 launch 中通过 parameters=[config_file] 加载
+cpp_heartbeat_node:
+  ros__parameters:
+    robot_state_topic: /robot_state
+    operator_instruction_topic: /operator_instruction
+
+tech_1_1_node:
+  ros__parameters:
+    # 由 launch 注入 FindPackageShare 解析的绝对路径
+    behavior_tree_xml: main_inspection_tree.xml
+
+execution:
+  ros__parameters:
+    # 传感器数据新鲜度阈值（毫秒）—— tech_1_6 MultiSensorSynchronizer 消费
+    max_sensor_age_ms: 20

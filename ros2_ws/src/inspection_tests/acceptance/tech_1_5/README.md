@@ -1,0 +1,41 @@
+# 技术 1.5 验收（钢格网主动抑振）
+
+## 硬边界
+- 500/1000Hz 控制环在 C++ 独立线程运行，Python/HMI 不阻塞 MPC 回路。
+- C++ 侧通过 `RobotSdkAdapter`/`FootForceAdapter`/`ImuAdapter` 抽象接口注入，不直调厂商 SDK。
+- MPC 求解器未批准：`AbstractMpcSolver` 抽象接口，`FakeMpcSolver` 仅做确定性阻尼修正，不虚构求解结果。
+
+## adapter / 订阅注入说明
+`tech_1_5_node` 内部四组件采用 `SetXxx(...)` 注入式设计，组件本身不直接订阅 Topic 或实例化真实适配器：
+- **FootForceAdapter / ImuAdapter**：由上层节点启动时创建具体实例化适配器，通过 `SetFootForceAdapter()` / `SetImuAdapter()` 注入；高频线程调用 `ReadSample()` 读取数据。
+- **RobotSdkAdapter**：由上层 launch 或节点初始化时创建，通过 `SetRobotSdkAdapter()` 注入；`ApplyCorrection` 后通过 `SendJointCommand()` 下发。
+- **AbstractMpcSolver**：训练框架/求解库批准后创建具体派生，通过 `SetMpcSolver()` 注入；未注入时 `MpcVibrationController` 不激活，不虚构修正。
+
+## PPT 指标（阈值已落地 `grating_metrics_recorder.hpp` + `grating_metrics.py`）
+- 步态异常率 ≤ **15%**（PPT：降低 85% 以上）
+- 平均速度 ≥ **0.8 m/s**
+- 单次巡检距离 ≥ **2 km**（2000 m）
+
+## 必测场景
+详见 [scenarios.md](./scenarios.md)。
+
+## 证据模板
+验收证据按本目录 `scenarios.md` 的场景逐项归档。
+
+## 本机可运行验证
+- Python unittest：
+  ```
+  set PYTHONPATH=...\ros2_ws\src\inspection_planning_py
+  cd ros2_ws\src\inspection_tests\unit_python
+  python -m unittest tech_1_1_to_1_9.test_grating_metrics_1_5 -v
+  ```
+- C++ 纯逻辑 smoke test（clang++ 脱离 ROS）：
+  ```
+  clang++ -std=c++17 -I<include> smoke_test_core.cpp <common/1.1/1.2/1.3/1.4/1.5 实现> -o smoke_test.exe
+  smoke_test.exe  # 应打印 "core logic smoke test passed (incl. tech_1_3 + tech_1_4 + tech_1_5 components)"
+  ```
+- ROS 真实编译（需 ROS 2 + colcon）：
+  ```
+  colcon build --packages-up-to inspection_execution_cpp inspection_planning_py
+  ros2 launch inspection_bringup tech_1_5.launch.py
+  ```

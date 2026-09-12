@@ -1,0 +1,39 @@
+# Normalize line endings; force LF for files that must run on Linux (ROS 2 target).
+* text=auto
+
+# Source code
+*.c text
+*.h text
+*.cpp text
+*.hpp text
+*.py text eol=lf
+*.js text
+*.css text
+*.html text
+*.json text
+*.xml text
+*.yaml text
+*.yml text
+*.md text
+*.txt text
+*.cmake text
+
+# ROS 2 interface / launch files must be LF
+*.msg text eol=lf
+*.srv text eol=lf
+*.action text eol=lf
+*.launch text eol=lf
+*.launch.py text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+
+# PowerShell scripts
+*.ps1 text
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.pdf binary

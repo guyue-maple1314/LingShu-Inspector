@@ -1,0 +1,23 @@
+qos:
+  imu:
+    reliability: best_effort
+    history: keep_last
+    depth: 1
+  foot_force:
+    reliability: best_effort
+    history: keep_last
+    depth: 1
+  camera:
+    reliability: best_effort
+    history: keep_last
+    depth: 1
+  task:
+    reliability: reliable
+    durability: transient_local
+    history: keep_last
+    depth: 10
+  event:
+    reliability: reliable
+    durability: volatile
+    history: keep_last
+    depth: 10

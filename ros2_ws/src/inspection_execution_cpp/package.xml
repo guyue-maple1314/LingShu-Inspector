@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>inspection_execution_cpp</name>
+  <version>0.1.0</version>
+  <description>C++ execution layer (sensor fusion, motion control, behavior tree, signal processing) for the quadruped inspection robot.</description>
+  <maintainer email="lszx_byc@qdgw.edu.cn">青岛港湾职业技术学院 灵枢智行团队</maintainer>
+  <author>青岛港湾职业技术学院 灵枢智行团队 (qdgw / lszx_byc)</author>
+  <license>proprietary</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>inspection_interfaces</depend>
+
+  <!-- BehaviorTree.CPP v4 (behaviortree_cpp) 是非 ROS 依赖，在 CMakeLists 中 find_package 并链接。 -->
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

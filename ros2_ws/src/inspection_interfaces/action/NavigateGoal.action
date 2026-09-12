@@ -1,0 +1,9 @@
+# 动态目标与重规划路径的导航（1.1、1.6）
+geometry_msgs/PoseStamped target_pose
+string navigation_mode
+---
+bool success
+string message
+---
+geometry_msgs/PoseWithCovariance current_pose
+string state

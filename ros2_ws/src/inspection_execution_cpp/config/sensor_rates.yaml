@@ -1,0 +1,8 @@
+# 参考 ROS2 参数模板（当前 launch 使用内联 parameters，此文件供参数文件加载模式参考）
+# 参数名与各节点 declare_parameter() 对应
+sensor_rates:
+  ros__parameters:
+    imu_hz: 1000
+    foot_force_hz: 500
+    camera_fps: 30
+    thermal_fps: 30

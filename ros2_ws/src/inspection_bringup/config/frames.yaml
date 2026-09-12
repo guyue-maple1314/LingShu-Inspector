@@ -1,0 +1,13 @@
+frames:
+  base_link: base_link
+  odom: odom
+  map: map
+  lidar: lidar_link
+  imu: imu_link
+  camera_left: camera_left_link
+  thermal: thermal_link
+  microphone_array: microphone_link
+  foot_front_left: foot_fl
+  foot_front_right: foot_fr
+  foot_rear_left: foot_rl
+  foot_rear_right: foot_rr

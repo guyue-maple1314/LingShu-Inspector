@@ -1,0 +1,8 @@
+# 长时巡检/异常/采集任务（1.1、1.2）
+StructuredGoal goal
+---
+bool success
+string message
+---
+float64 progress
+string current_state
