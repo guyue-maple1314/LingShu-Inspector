@@ -33,8 +33,11 @@ IMU 采样率               | 1000              | Hz        | devices.yaml      
 大模型名称               | deepseek-chat     | -         | planning.yaml              | DeepSeek OpenAI 兼容接口
 大模型超时               | 30.0              | s         | planning.yaml              | llm_timeout_sec
 告警缓存上限             | 50                | 条        | llm_online_decision_node.py| 防止内存与提示词无界增长
-决策时间预算             | 500               | ms        | planning.yaml              | 配置项（对应验收口径）
-目标有效期配置           | 500               | ms        | planning.yaml              | 配置项
+决策时间预算             | 500               | ms        | planning.yaml / 节点参数   | decision_time_budget_ms，超预算打警告
+目标有效期配置           | 500               | ms        | planning.yaml              | goal_validity_ms（配置项；实际时效由 valid_until 决定）
+最高允许行进速度         | 1.5               | m/s       | goal_safety_validator      | kMaxAllowedSpeedMps，constraints 中超限即拒绝
+禁止性约束关键词         | disable_safety / ignore_geofence / disable_geofence / no_limit / bypass / 关闭安全 / 忽略围栏 / 无视限速 / 取消限速 | - | goal_safety_validator | 命中任一即拒绝执行
+结构化目标预校验         | 字段不全或类型不符即不下发 | - | structured_output_validator | Python 侧预校验，最终执行权在 C++ 行为树
 结构化目标有效期         | 30                | s         | llm_client.py（stub）      | valid_until_sec = now + 30
 行为树库                 | BehaviorTree.CPP v4 (4.6.2)| - | README / CMakeLists        | 头文件前缀 behaviortree_cpp/
 验收：结构化指令成功率   | ≥ 0.95            | -         | acceptance_thresholds.yaml | 1.1

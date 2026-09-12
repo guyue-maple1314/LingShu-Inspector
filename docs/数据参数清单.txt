@@ -79,6 +79,12 @@ MPC 激活阈值    默认 Mild 及以上介入
 就绪信号假定    assume_robot_ready 默认 true（未接实机就绪信号时打印告警，不静默假设）
 任务进度步长    task_duration_sec 默认 2.0 s（骨架按时间均匀推进，非真实完成度）
 
+── 1.1 结构化目标安全校验（GoalSafetyValidator）──
+最高允许速度    1.5 m/s（kMaxAllowedSpeedMps；constraints 中 max_speed 超限即拒绝）
+禁止性约束      命中 disable_safety / ignore_geofence / disable_geofence / no_limit /
+                bypass / 关闭安全 / 忽略围栏 / 无视限速 / 取消限速 之一即拒绝
+决策时间预算    decision_time_budget_ms 默认 500 ms（超预算打警告，记录在 DecisionMetrics）
+
 ── 1.7 语义地图与定位 ──
 栅格分辨率      5 cm（厘米级映射，kDefaultResolutionM）
 栅格融合权重    BIM 0.4 / SLAM 0.3 / 点云 0.3

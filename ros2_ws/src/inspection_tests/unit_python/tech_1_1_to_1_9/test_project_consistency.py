@@ -196,5 +196,22 @@ class TestAcceptanceAndParameterTable(unittest.TestCase):
         self.assertEqual(topic_count, real_topics, "数据参数清单的话题数量与实际不符")
 
 
+class TestNoDeadPythonModule(unittest.TestCase):
+    def test_every_module_is_referenced(self):
+        """Python 侧不允许存在“写了但没人用”的模块（公共基础设施必须真正接入）。"""
+        base = SRC / "inspection_planning_py" / "inspection_planning_py"
+        modules = [p for p in base.rglob("*.py") if p.name != "__init__.py"]
+        all_sources = list(SRC.rglob("*.py"))
+        dead = []
+        for module in modules:
+            name = module.stem
+            if not any(
+                other != module and re.search(rf"\b{re.escape(name)}\b", _read(other))
+                for other in all_sources
+            ):
+                dead.append(str(module.relative_to(base)))
+        self.assertEqual(dead, [], f"未被任何文件引用的 Python 模块：{dead}")
+
+
 if __name__ == "__main__":
     unittest.main()

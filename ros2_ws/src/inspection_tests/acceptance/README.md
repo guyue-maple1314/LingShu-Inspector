@@ -27,7 +27,7 @@
 | 证据项 | 命令 | 结果 |
 |---|---|---|
 | C++ 纯逻辑 smoke test | `clang++ -std=c++17 -Wall -Wextra -Wpedantic` 编译 39 个源文件 | **零告警**，`smoke_test.exe` 退出码 0，输出 `core logic smoke test passed (incl. tech_1_3 + ... + tech_1_9 components)` |
-| Python 单元测试 | `python -m unittest discover`（`unit_python/tech_1_1_to_1_9/`） | **157 个用例全部通过**（`Ran 157 tests ... OK`） |
+| Python 单元测试 | `python -m unittest discover`（`unit_python/tech_1_1_to_1_9/`） | **158 个用例全部通过**（`Ran 158 tests ... OK`） |
 
 覆盖范围：
 - C++ smoke 覆盖 1.1（GoalSafetyValidator/AbnormalSwitchMonitor/PpoPolicyRuntime）、1.2（TaskProgressStore/TaskResumeExecutor/PreemptionLatencyMonitor）、1.3–1.9 全部在线组件。

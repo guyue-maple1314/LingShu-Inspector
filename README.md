@@ -117,7 +117,7 @@ ros2 launch inspection_bringup system.launch.py
 
 | 项 | 范围 | 结果 |
 |---|---|---|
-| Python 单元测试 | 20 个测试文件、157 项用例（`unittest`，含节点级与工程一致性检查） | 本机全部通过 |
+| Python 单元测试 | 20 个测试文件、158 项用例（`unittest`，含节点级与工程一致性检查） | 本机全部通过 |
 | C++ 纯逻辑 smoke test | `smoke_test_core.cpp` + 38 个组件源文件，`-std=c++17 -Wall -Wextra -Wpedantic` | 零告警，断言全部通过 |
 | 集成 / 性能测试 | 需 ROS 2 环境，含占位桩 | 本机未运行 |
 
@@ -150,7 +150,7 @@ Python 单元测试（`unittest`，Windows / Linux 均可）：
 cd ros2_ws/src
 PYTHONPATH=inspection_planning_py python -m unittest discover \
   -s inspection_tests/unit_python/tech_1_1_to_1_9 -p "test_*.py" -v
-# 实测：157 项用例全部通过（含 1.2 安全电量策略 21 例、节点级与一致性检查 23 例）
+# 实测：158 项用例全部通过（含 1.2 安全电量策略 21 例、节点级与一致性检查 24 例）
 ```
 
 C++ 纯逻辑冒烟测试（`clang++` 或 `g++`，脱离 ROS 编译）：

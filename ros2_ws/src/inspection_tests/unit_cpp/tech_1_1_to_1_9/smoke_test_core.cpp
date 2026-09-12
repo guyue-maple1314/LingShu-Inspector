@@ -78,6 +78,27 @@ int main() {
 
   input.robot_ready = false;
   assert(!validator.Validate(input).allowed);
+  input.robot_ready = true;
+
+  // 1b. constraints 校验：禁止性约束 / 超限速度一律拒绝
+  input.constraints = "max_speed=0.8";
+  assert(validator.Validate(input).allowed);
+  assert(std::abs(tech_1_1::GoalSafetyValidator::ParseMaxSpeedMps(input.constraints) -
+                  0.8) < 1e-9);
+
+  input.constraints = "max_speed=3.0";
+  assert(!validator.Validate(input).allowed);   // 超过平台上限 1.5 m/s
+
+  input.constraints = "disable_safety=true";
+  assert(!validator.Validate(input).allowed);
+  assert(tech_1_1::GoalSafetyValidator::HasForbiddenConstraint(input.constraints));
+
+  input.constraints = "无视限速，直接通行";
+  assert(!validator.Validate(input).allowed);
+
+  input.constraints = "from instruction: 巡检 3 号机组";
+  assert(validator.Validate(input).allowed);
+  assert(!tech_1_1::GoalSafetyValidator::HasForbiddenConstraint(input.constraints));
 
   // 2. 任务进度存储
   tech_1_2::TaskProgressStore store;

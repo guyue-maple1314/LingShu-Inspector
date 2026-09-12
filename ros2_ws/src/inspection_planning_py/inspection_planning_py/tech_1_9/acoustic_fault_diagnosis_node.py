@@ -38,6 +38,7 @@ from inspection_planning_py.common.topic_names import (
     ACOUSTIC_MONO,
     INSPECTION_ALERT,
 )
+from inspection_planning_py.common import error_codes
 from inspection_planning_py.tech_1_9.acoustic_metrics import AcousticMetrics
 from inspection_planning_py.tech_1_9.acoustic_model_loader import (
     AbstractAcousticModel,
@@ -135,7 +136,8 @@ class AcousticFaultDiagnosisNode(Node):  # type: ignore[misc]
         decision = self._diagnose(msg, now_sec)
         if decision is None:
             self.get_logger().debug(
-                f"snr={msg.output_snr_db:.1f}dB (no valid diagnosis)"
+                f"snr={msg.output_snr_db:.1f}dB "
+                f"({error_codes.describe(error_codes.ACOUSTIC_LOW_CONFIDENCE)}: no valid diagnosis)"
             )
             return
 

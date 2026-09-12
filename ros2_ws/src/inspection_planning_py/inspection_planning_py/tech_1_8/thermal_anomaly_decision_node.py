@@ -31,6 +31,7 @@ except ImportError:  # 本机无 ROS 2 环境
 
 from ..common.node_names import THERMAL_ANOMALY_DECISION_NODE
 from ..common.topic_names import THERMAL_MEASUREMENT, INSPECTION_ALERT
+from ..common import error_codes
 from .thermal_metrics import (
     ThermalMeasurementSample,
     ThermalMetrics,
@@ -79,6 +80,9 @@ class ThermalAnomalyDecisionNode(Node):  # type: ignore[misc]
 
         # 红线：超范围（error_state != "ok"）时不做异常高温判定
         if not in_range:
+            self.get_logger().debug(
+                f"skip anomaly decision: {error_codes.describe(error_codes.THERMAL_OUT_OF_RANGE)}"
+                f" ({msg.error_state})")
             return
 
         # 范围内 → 异常高温判定
