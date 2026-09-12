@@ -135,6 +135,15 @@ PPT 中的定量指标（成功率、精度、时延、效率等）需在实机�
 
 ### 2. 纯逻辑单元测试（无需 ROS 2）
 
+一键复现（推荐，脚本会依次跑完下面两步并给出通过结论）：
+
+```bash
+bash tools/reproduce.sh                                         # Linux / macOS
+powershell -ExecutionPolicy Bypass -File tools\reproduce.ps1     # Windows
+```
+
+以下两条命令与脚本内容一致，便于逐步核对：
+
 Python 单元测试（`unittest`，Windows / Linux 均可）：
 
 ```bash
