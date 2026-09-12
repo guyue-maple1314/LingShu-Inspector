@@ -62,3 +62,9 @@
 ## S14：有效源覆盖率
 - **输入**：3/5 有效源
 - **预期**：`source_coverage == 0.6`
+
+## S15：/navigate_goal Action 闭环（需 ROS 2）
+- **输入**：向 `tech_1_6_node` 发送 `NavigateGoal` 目标（目标点与当前位置重合）
+- **预期**：接受目标 → 反馈 `current_pose` 与 `state` → 到达容差 10 cm 内返回
+  `success=true`；`nav_timeout_sec`（默认 60 s）内未到达则 abort，超时原因写入 message
+- **证据**：`ros2 action send_goal /navigate_goal ...` 输出 + 反馈序列

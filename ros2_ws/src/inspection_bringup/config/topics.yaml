@@ -13,6 +13,7 @@ topics:
   semantic_alarm: { name: /semantic_alarm, type: inspection_interfaces/msg/SemanticAlarm }
   thermal_measurement: { name: /thermal_measurement, type: inspection_interfaces/msg/ThermalMeasurement }
   acoustic_diagnosis: { name: /acoustic_diagnosis, type: inspection_interfaces/msg/AcousticDiagnosis }
+  acoustic_mono: { name: /acoustic_mono, type: inspection_interfaces/msg/AcousticFrame }
 
 services:
   validate_goal: { name: /validate_goal, type: inspection_interfaces/srv/ValidateGoal }

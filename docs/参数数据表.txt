@@ -1,0 +1,178 @@
+================================================================================
+灵枢巡检机器人 LingShu Inspector —— 具体参数数据表
+项目：基于 ROS 2 三层架构的四足机械狗巡检机器人（C++ / Python / JavaScript）
+团队：青岛港湾职业技术学院 · 灵枢智行团队（qdgw / lszx_byc）
+版本：对应提交 2159fc5 起的“迭代技术代码”版本
+================================================================================
+
+说明：
+1. 本表是“按技术逐项列出”的参数数据表，与 docs/数据参数清单.txt（全量盘点）配套；
+2. 所有值均为程序中的实际取值，来源标注到配置文件或源码常量，代码不另设口径；
+3. 验收阈值集中保存在 inspection_bringup/config/acceptance_thresholds.yaml；
+4. 标“占位”的项表示骨架实现的临时假设，实机标定/接入后必须替换。
+
+--------------------------------------------------------------------------------
+【一】系统与传感器参数
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+IMU 采样率               | 1000              | Hz        | devices.yaml               | /imu
+足端力采样率             | 500               | Hz        | devices.yaml               | /foot_force，四足
+可见光相机帧率           | 30                | fps       | devices.yaml               | /image（双目）
+红外热像帧率             | 30                | fps       | devices.yaml               | /thermal_image
+麦克风阵列通道数         | 8                 | 路        | devices.yaml               | /audio_multi_channel
+高频 QoS                 | best_effort       | -         | qos.yaml                   | imu / foot_force / camera，depth=1
+任务 QoS                 | reliable          | -         | qos.yaml                   | transient_local，depth=10
+事件 QoS                 | reliable          | -         | qos.yaml                   | volatile，depth=10
+坐标系数量               | 14                | 个        | frames.yaml                | base_link / map / 各类 link
+
+--------------------------------------------------------------------------------
+【二】技术 1.1 大模型—行为树—PPO 双环协同
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+大模型后端               | deepseek          | -         | planning.yaml              | 缺省 stub 可切换
+大模型名称               | deepseek-chat     | -         | planning.yaml              | DeepSeek OpenAI 兼容接口
+大模型超时               | 30.0              | s         | planning.yaml              | llm_timeout_sec
+告警缓存上限             | 50                | 条        | llm_online_decision_node.py| 防止内存与提示词无界增长
+决策时间预算             | 500               | ms        | planning.yaml              | 配置项（对应验收口径）
+目标有效期配置           | 500               | ms        | planning.yaml              | 配置项
+结构化目标有效期         | 30                | s         | llm_client.py（stub）      | valid_until_sec = now + 30
+行为树库                 | BehaviorTree.CPP v4 (4.6.2)| - | README / CMakeLists        | 头文件前缀 behaviortree_cpp/
+验收：结构化指令成功率   | ≥ 0.95            | -         | acceptance_thresholds.yaml | 1.1
+验收：异常切换时延       | ≤ 500             | ms        | acceptance_thresholds.yaml | 1.1
+
+--------------------------------------------------------------------------------
+【三】技术 1.2 风险与能耗约束的动态任务抢占与恢复
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+安全电量基准             | 30                | %         | battery_safety.yaml        | base_safe_soc_percent
+返航额外余量             | 10                | 百分点    | battery_safety.yaml        | return_reserve_percent_points
+单位距离耗电             | 0.01              | %/m       | battery_safety.yaml        | consumption_per_meter_percent（保守初值）
+动态安全阈值             | max(30%, 预计返航耗电+10)    | % | battery_safety_policy.py | safe_soc
+新任务准入条件           | 电量-任务耗电-返航耗电 ≥ 10  | 百分点 | battery_safety_policy.py | 不满足不启动
+调度周期                 | 0.1               | s         | planning.yaml              | scheduler_period_sec
+任务价值权重             | 风险 1.0 / 收益 1.0 / 紧急度 1.0 | - | task_scoring.yaml      | 权重不硬编码
+任务进度推进时长         | 2.0               | s         | task_lifecycle_executor    | 占位：均匀推进，非真实完成度
+就绪信号假定             | true              | -         | task_lifecycle_executor    | 占位：实机就绪信号接入后替换
+验收：多任务成功率       | 0.923             | -         | acceptance_thresholds.yaml | 1.2
+验收：抢占响应           | ≤ 500             | ms        | acceptance_thresholds.yaml | 1.2
+
+--------------------------------------------------------------------------------
+【四】技术 1.3 面向多场景的机器人运动智能迁移
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+观测维度                 | 17                | 维        | observation_builder        | kDefaultObservationDim
+动作维度                 | 12                | 维        | policy_output_validator    | kDefaultActionDim，每维 ±1
+关节增量范围             | ±0.04             | rad/维    | locomotion_command_adapter | 装配时设置
+足端力归一基准           | 50                | N         | observation_builder        | 归一后上限 5.0
+策略输出时效             | 100               | ms        | policy_output_validator    | 超时判 kStaleSensorData
+策略元数据               | policy_metadata.json        | - | ppo_policy_loader          | version/obs_dim/act_dim/权重文件名
+验收：复杂地形通行率     | > 0.90            | -         | acceptance_thresholds.yaml | 1.3
+验收：实机迁移成功率     | 0.968             | -         | acceptance_thresholds.yaml | 1.3
+
+--------------------------------------------------------------------------------
+【五】技术 1.4 极窄通道智能感知与通行
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+机器人宽度               | 0.46              | m         | tech_1_4_node              | robot_width（对应 PPT 46 cm）
+安全裕度                 | 0.10              | m         | tech_1_4_node              | safety_margin
+最低视觉置信度           | 0.6               | -         | tech_1_4_node              | min_visual_confidence
+通道宽度判定             | 左右边界间距 ≥ min_robot_width | m | dynamic_pointcloud_segmenter | 越界即 valid=false
+通行状态机               | Tracking / Blocked / Completed / Failed | - | narrow_corridor_executor | 视觉无效或宽度不足→Blocked
+验收：通道宽度           | 75                | cm        | acceptance_thresholds.yaml | 46 cm 机器人通过 75 cm 通道
+
+--------------------------------------------------------------------------------
+【六】技术 1.5 钢格网地面主动抑振
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+高频控制频率             | 500               | Hz        | tech_1_5_node              | control_freq_hz（独立线程）
+状态发布频率             | 10                | Hz        | tech_1_5_node              | /grating_status
+目标速度                 | 0.8               | m/s       | launch / 参数              | target_speed
+实心地面足力阈值         | 30                | N         | foot_contact_estimator     | kSolidThreshold
+钢格网最低足力           | 8                 | N         | foot_contact_estimator     | kGratingMin
+振动分级（轻微/中度/严重）| 1.5 / 3.0 / 5.0  | m/s²      | vibration_estimator        | RMS 阈值
+共振频段                 | 3 – 12            | Hz        | vibration_estimator        | 主频落区间且 ≥ 中度判定共振
+滑动窗口                 | IMU 32 / 足力 16  | 采样      | vibration_estimator        | 约 32 ms
+验收：步态异常率下降     | ≥ 0.85（异常率 ≤15%） | -    | acceptance_thresholds.yaml | 1.5
+验收：平均速度           | ≥ 0.8             | m/s       | acceptance_thresholds.yaml | 1.5
+验收：单次巡检距离       | ≥ 2.0             | km        | acceptance_thresholds.yaml | 1.5
+无实测数据语义           | valid=false       | -         | GratingStatus.msg          | 上游不得据此评定指标
+
+--------------------------------------------------------------------------------
+【七】技术 1.6 弱纹理环境高精度融合导航
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+多源同步容差             | 5.0               | ms        | tech_1_6_node              | sync_tolerance_ms（激光/双目/IMU/足力）
+控制周期                 | 100               | ms        | tech_1_6_node              | control_period_ms
+足端力约束               | ≤ 50              | N         | kinematic_constraint_builder | 超限判约束不满足
+关节位置限位             | ±3.14             | rad       | kinematic_constraint_builder | ±π
+关节速度限位             | ±10               | rad/s     | kinematic_constraint_builder | 
+定位丢失阈值             | 有效源 < 2        | -         | localization_degradation_monitor | kLostSourceThreshold
+航点到达容差             | 0.10              | m         | navigation_executor        | kWaypointTolerance
+退化速度因子             | 0.3               | -         | navigation_executor        | kDegradedSpeedFactor
+导航超时                 | 60                | s         | tech_1_6_node              | nav_timeout_sec，超时 abort
+占位协方差（源≥3 / <3）  | 0.01 / 0.04       | -         | FakeLocalizerBackend       | 占位后端，不得当实测精度
+验收：定位精度           | ±2                | cm        | acceptance_thresholds.yaml | 1.6
+
+--------------------------------------------------------------------------------
+【八】技术 1.7 语义地图构建与定位
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+栅格分辨率               | 0.05              | m         | tech_1_7_node              | grid_resolution_m（厘米级）
+融合权重                 | BIM 0.4 / SLAM 0.3 / 点云 0.3 | - | weighted_grid_builder | 权重和 = 1
+位置匹配搜索半径         | 0.30              | m         | tech_1_7_node              | search_radius_m
+置信度下限               | 0.3               | -         | position_matcher           | kMinConfidence
+地图范围                 | 100 × 100         | 格        | tech_1_7_node              | map_size_x / map_size_y
+地图原点                 | (0.0, 0.0)        | m         | tech_1_7_node              | map_origin_x / map_origin_y
+处理周期                 | 200               | ms        | tech_1_7_node              | control_period_ms
+位置匹配前置条件         | pose_valid=true   | -         | InspectionAlert.msg        | false 时直接判「未定位」
+验收：位置报告准确率     | ≥ 0.98            | -         | acceptance_thresholds.yaml | 1.7
+
+--------------------------------------------------------------------------------
+【九】技术 1.8 抗振抑扰的动态红外精准测温
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+稳像曝光时间             | 8                 | ms        | thermal_image_stabilizer   | kDefaultExposureMs
+焦距系数                 | 400               | px/(rad·ms)| thermal_image_stabilizer  | 位移补偿换算
+图-像-IMU 同步容差       | 5                 | ms        | thermal_visual_imu_synchronizer | 30 fps ≈ 33 ms 帧间隔
+有效角度域               | −60 ~ +60         | °         | thermal_range_validator    | 超界标 angle_out_of_range
+有效距离域               | 1 ~ 5             | m         | thermal_range_validator    | 超界标 distance_out_of_range
+辐射率有效域             | (0, 1]            | -         | emissivity_compensator     | ≤0 或 >1 标 invalid_emissivity
+修正系数域               | 0.95 ~ 1.05       | -         | thermal_range_validator    | 超界标 coefficient_out_of_range
+角度修正上限             | 1.10              | 倍        | angle_distance_compensator | kDefaultMaxAngleCorrectionFactor（标定后可放宽）
+异常高温判定阈值         | 80                | ℃         | thermal_anomaly_decision_node | ANOMALY_HIGH_TEMP_C
+验收：静态偏差           | ≤ 0.2             | ℃         | acceptance_thresholds.yaml | 1.8
+验收：动态精度           | ± 0.5             | ℃         | acceptance_thresholds.yaml | 1.8
+
+--------------------------------------------------------------------------------
+【十】技术 1.9 强噪声环境下的定向声纹早期诊断
+--------------------------------------------------------------------------------
+参数                     | 值                | 单位      | 来源                       | 说明
+麦克风数量               | 8                 | 路        | microphone_synchronizer    | kNumMicrophones
+麦克风间距               | 0.03              | m         | directional_beamformer     | 阵列间距
+声速                     | 343               | m/s       | directional_beamformer     | 常温近似
+无混叠上限频率           | ≈ 5.71            | kHz       | directional_beamformer     | c/(2d)，超此频段需低通/子带
+多通道同步最大时延       | 20                | ms        | microphone_synchronizer    | max_age_ns = 20,000,000
+波束方位（示例参数）     | 0.0               | °         | tech_1_9_node              | beam_azimuth_deg
+背景噪声（示例参数）     | 85.0              | dB        | tech_1_9_node              | background_noise_db
+音频帧样本（示例）       | 64                | 采样      | tech_1_9_node              | 48000 Hz，合成占位波形
+音频帧时延上限           | 1.0               | s         | acoustic_fault_diagnosis_node | audio_max_age_sec，过期不推理
+故障告警置信度阈值       | 0.5               | -         | acoustic_fault_diagnosis_node | fault_confidence_threshold
+验收：输出 SNR           | 15 – 20           | dB        | acceptance_thresholds.yaml | 1.9
+验收：故障识别准确率     | 0.75              | -         | acceptance_thresholds.yaml | 1.9
+
+--------------------------------------------------------------------------------
+【十一】接口清单（数量）
+--------------------------------------------------------------------------------
+项                       | 数量              | 说明
+消息（msg）              | 15                | inspection_interfaces/msg/
+服务（srv）              | 2                 | /validate_goal、/resume_task
+动作（action）           | 2                 | /execute_task、/navigate_goal（服务端在 tech_1_6_node）
+业务话题                 | 15                | 见 docs/interfaces.md Topic 表
+原始传感器话题           | 6                 | 当前由适配器直读，未走 ROS 话题（预留）
+
+================================================================================
+备注：
+- 「提升类」指标（+25%、-90%、+10 倍、-85% 等）需项目方提供统一基线后才能计算；
+- 未接实机/未标定的参数已在表中标注“占位”，不得作为实机验收结论引用；
+- 全部节点名见 common/node_names.*，话题名见 common/topic_names.*，代码禁止散写字符串。
+================================================================================

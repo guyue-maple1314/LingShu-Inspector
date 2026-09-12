@@ -11,6 +11,7 @@
 #include "inspection_execution_cpp/tech_1_9/microphone_synchronizer.hpp"
 #include "inspection_execution_cpp/tech_1_9/snr_estimator.hpp"
 #include "inspection_execution_cpp/tech_1_9/spatial_filter.hpp"
+#include "inspection_interfaces/msg/acoustic_frame.hpp"
 #include "inspection_interfaces/msg/acoustic_diagnosis.hpp"
 
 namespace inspection_execution {
@@ -26,9 +27,15 @@ class Tech19Node : public rclcpp::Node {
     this->declare_parameter<double>("background_noise_db", 85.0);
     publisher_ = this->create_publisher<inspection_interfaces::msg::AcousticDiagnosis>(
         topic_names::kAcousticDiagnosis, 10);
+    audio_pub_ = this->create_publisher<inspection_interfaces::msg::AcousticFrame>(
+        topic_names::kAcousticMono, 10);
     timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() { Tick(); });
-    RCLCPP_INFO(this->get_logger(), "%s started (示例音频输入)",
-                node_names::kTech1_9Node);
+    RCLCPP_WARN(this->get_logger(),
+                "%s started with SYNTHETIC audio input (placeholder, no real "
+                "microphone array wired): beamforming/SNR are computed from the "
+                "generated waveform and must not be cited as measured results. "
+                "Beamformed mono frames are published on %s for the Python model.",
+                node_names::kTech1_9Node, topic_names::kAcousticMono);
   }
 
  private:
@@ -73,6 +80,16 @@ class Tech19Node : public rclcpp::Node {
     msg.fault_class = "";
     msg.confidence = 0.0;
     publisher_->publish(msg);
+
+    // 波束形成后的单通道波形：交给 Python 侧声纹模型推理（不再让模型拿空样本）
+    auto audio_msg = inspection_interfaces::msg::AcousticFrame();
+    audio_msg.header = msg.header;
+    audio_msg.beam_azimuth = msg.beam_azimuth;
+    audio_msg.beam_elevation = msg.beam_elevation;
+    audio_msg.sample_rate = audio.sample_rate;
+    audio_msg.samples = beam.mono;
+    audio_msg.valid = true;
+    audio_pub_->publish(audio_msg);
   }
 
   MicrophoneSynchronizer synchronizer_;
@@ -80,6 +97,7 @@ class Tech19Node : public rclcpp::Node {
   SpatialFilter spatial_filter_;
   SnrEstimator snr_estimator_;
   rclcpp::Publisher<inspection_interfaces::msg::AcousticDiagnosis>::SharedPtr publisher_;
+  rclcpp::Publisher<inspection_interfaces::msg::AcousticFrame>::SharedPtr audio_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 

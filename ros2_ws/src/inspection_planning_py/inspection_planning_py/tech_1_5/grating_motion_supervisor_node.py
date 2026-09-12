@@ -8,14 +8,23 @@
 
 红线：本节点只使用 C++ 侧实测字段；没有实测数据时不做阈值判定，
       既不虚构速度/距离，也不把"无数据"算成达标。
+
+本模块按 `_HAS_RCLPY` 模式编写：无 ROS 环境时仍可导入并单测
+`_on_status` 的聚合逻辑（见 unit_python/tech_1_1_to_1_9）。
 """
 
 from __future__ import annotations
 
-import rclpy
-from rclpy.node import Node
+import sys
 
-from inspection_interfaces.msg import GratingStatus
+try:
+    import rclpy
+    from rclpy.node import Node
+    from inspection_interfaces.msg import GratingStatus
+    _HAS_RCLPY = True
+except ImportError:  # 本机无 ROS 2 环境
+    _HAS_RCLPY = False
+    Node = object  # type: ignore
 
 from inspection_planning_py.common.node_names import GRATING_MOTION_SUPERVISOR_NODE
 from inspection_planning_py.common.topic_names import GRATING_STATUS
@@ -24,25 +33,36 @@ from inspection_planning_py.tech_1_5.grating_metrics import (
     GratingRunSample,
 )
 
+#: 无 ROS 环境（离线单测）时的默认运行目标
+DEFAULT_RUN_DISTANCE_TARGET = 2000.0
 
-class GratingMotionSupervisorNode(Node):
+
+class GratingMotionSupervisorNode(Node):  # type: ignore[misc]
+    """钢格网任务级监督节点（纯逻辑部分可离线单测）。"""
+
     def __init__(self) -> None:
-        super().__init__(GRATING_MOTION_SUPERVISOR_NODE)
+        if _HAS_RCLPY:
+            super().__init__(GRATING_MOTION_SUPERVISOR_NODE)  # type: ignore[call-arg]
 
-        self.declare_parameter("target_speed", 0.8)
-        self.declare_parameter("grating_mode", False)
-        self.declare_parameter("run_distance_target", 2000.0)
-
+        self._run_distance_target = DEFAULT_RUN_DISTANCE_TARGET
         self._metrics = GratingMetrics()
         self._metrics.start_run("supervised_run")
         self._last_total_steps = 0
         self._last_anomaly_count = 0
         self._no_data_count = 0
 
+        if not _HAS_RCLPY:
+            return
+
+        self.declare_parameter("target_speed", 0.8)
+        self.declare_parameter("grating_mode", False)
+        self.declare_parameter("run_distance_target", DEFAULT_RUN_DISTANCE_TARGET)
+        self._run_distance_target = float(
+            self.get_parameter("run_distance_target").value)
+
         self.create_subscription(
             GratingStatus, GRATING_STATUS, self._on_status, 10
         )
-
         # 低频状态打印（1Hz）
         self.create_timer(1.0, self._periodic_report)
 
@@ -51,18 +71,16 @@ class GratingMotionSupervisorNode(Node):
             "not in 500/1000Hz control loop"
         )
 
-    def _on_status(self, msg: GratingStatus) -> None:
-        """接收 C++ 节点的实测状态与指标。
+    def _on_status(self, msg) -> None:
+        """接收 C++ 节点的实测状态与指标（GratingStatus）。
 
-        GratingStatus 字段：
-        - header.stamp: 时间戳
-        - valid: 是否已有实测数据（false 时下列指标无意义）
-        - terrain_type / grating_mode_active / passable / confidence
-        - accel_rms / max_vibration_rms / resonance_detected
-        - total_steps / anomaly_count / anomaly_rate / avg_speed / distance_m
+        字段：header.stamp / valid / terrain_type / grating_mode_active /
+        passable / confidence / accel_rms / max_vibration_rms /
+        resonance_detected / total_steps / anomaly_count / anomaly_rate /
+        avg_speed / distance_m
         """
-        ts = msg.header.stamp
-        timestamp_ns = ts.sec * 1_000_000_000 + ts.nanosec
+        stamp = msg.header.stamp
+        timestamp_ns = int(stamp.sec) * 1_000_000_000 + int(stamp.nanosec)
 
         # 红线：没有实测数据（未注入适配器 / 控制环未产生步数）时不记录、不评估
         if not msg.valid:
@@ -109,6 +127,12 @@ class GratingMotionSupervisorNode(Node):
 
 
 def main(args=None) -> None:
+    if not _HAS_RCLPY:
+        print("[grating_motion_supervisor_node] rclpy not available; "
+              "running offline logic check.", file=sys.stderr)
+        print(GratingMotionSupervisorNode().finish_and_report(), file=sys.stderr)
+        return
+
     rclpy.init(args=args)
     node = GratingMotionSupervisorNode()
     try:

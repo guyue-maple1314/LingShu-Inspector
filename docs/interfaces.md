@@ -19,7 +19,8 @@ Topic 用连续状态，Service 用短时查询/校验，Action 用可抢占长�
 | `/fusion_pose` | `FusionPose` | C++ 定位 | Python、JS | 周期 | Sensor Data | 1.6 |
 | `/semantic_alarm` | `SemanticAlarm` | C++ 定位 | JS | 事件 | Reliable | 1.7 |
 | `/thermal_measurement` | `ThermalMeasurement` | C++ 补偿 | Python、JS | 30 fps | Sensor Data | 1.8 |
-| `/acoustic_diagnosis` | `AcousticDiagnosis` | Python 诊断 | JS | 事件 | Reliable | 1.9 |
+| `/acoustic_diagnosis` | `AcousticDiagnosis` | C++ 1.9 状态 / Python 分类回填 | Python、JS | 事件 | Reliable | 1.9 |
+| `/acoustic_mono` | `AcousticFrame` | C++ 1.9 波束形成 | Python 1.9 模型 | 10 Hz | Sensor Data | 1.9 |
 
 原始传感器 Topic（C++ 内部）：`/imu`(1000 Hz)、`/foot_force`(500 Hz)、`/lidar_scan`、`/image`、`/thermal_image`、`/audio_multi_channel`。
 
@@ -48,4 +49,4 @@ Topic 用连续状态，Service 用短时查询/校验，Action 用可抢占长�
 | 名称 | 类型 | 作用 |
 |---|---|---|
 | `/execute_task` | `ExecuteTask` | 巡检/异常/采集长任务，含反馈、取消、抢占 |
-| `/navigate_goal` | `NavigateGoal` | 动态目标与重规划路径导航 |
+| `/navigate_goal` | `NavigateGoal` | 动态目标与重规划路径导航（服务端在 `tech_1_6_node`：接受目标→航点执行→反馈位姿与状态→到达/超时结束） |

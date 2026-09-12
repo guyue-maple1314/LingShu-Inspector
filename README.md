@@ -1,6 +1,6 @@
 # 四足机械狗巡检机器人（ROS 2 三层架构）
 
-Copyright (c) 2026 青岛港湾职业技术学院 · 灵枢智行团队（qdgw / lszx_byc）。保留所有权利，授权条款见 [LICENSE](LICENSE)。
+Copyright (c) 2026 青岛港湾职业技术学院 · 灵枢智行团队（qdgw / lszx_byc）（联系邮箱：xyt1351325@hotmail.com）。保留所有权利，授权条款见 [LICENSE](LICENSE)。
 
 灵枢巡检机器人（LingShu Inspector）是面向工业场区巡检的四足机械狗软件系统，以 ROS 2 为通信框架，按「C++ 执行层 — Python 规划决策层 — 人机交互层」三层划分，围绕 9 项核心技术（1.1–1.9）组织代码、参数、测试与验收材料。
 
@@ -117,7 +117,7 @@ ros2 launch inspection_bringup system.launch.py
 
 | 项 | 范围 | 结果 |
 |---|---|---|
-| Python 单元测试 | 17 个测试文件、134 项用例（`unittest`） | 本机全部通过 |
+| Python 单元测试 | 20 个测试文件、157 项用例（`unittest`，含节点级与工程一致性检查） | 本机全部通过 |
 | C++ 纯逻辑 smoke test | `smoke_test_core.cpp` + 38 个组件源文件，`-std=c++17 -Wall -Wextra -Wpedantic` | 零告警，断言全部通过 |
 | 集成 / 性能测试 | 需 ROS 2 环境，含占位桩 | 本机未运行 |
 
@@ -150,7 +150,7 @@ Python 单元测试（`unittest`，Windows / Linux 均可）：
 cd ros2_ws/src
 PYTHONPATH=inspection_planning_py python -m unittest discover \
   -s inspection_tests/unit_python/tech_1_1_to_1_9 -p "test_*.py" -v
-# 实测：134 项用例全部通过（含 1.2 安全电量策略 21 例）
+# 实测：157 项用例全部通过（含 1.2 安全电量策略 21 例、节点级与一致性检查 23 例）
 ```
 
 C++ 纯逻辑冒烟测试（`clang++` 或 `g++`，脱离 ROS 编译）：
@@ -206,7 +206,7 @@ python3 -m pytest src/inspection_tests/integration/test_low_battery_return.py -v
 - [接口说明](docs/interfaces.md)
 - [坐标系说明](docs/coordinate_frames.md)
 - [验收指标](docs/acceptance_metrics.md)
-- [数据参数清单](docs/数据参数清单.txt)
+- [数据参数清单](docs/数据参数清单.txt)、[参数数据表](docs/参数数据表.txt)
 - [使用须知](docs/须知.txt)
 
 ## 约定

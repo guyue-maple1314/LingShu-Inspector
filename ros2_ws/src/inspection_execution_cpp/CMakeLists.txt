@@ -136,6 +136,7 @@ add_executable(tech_1_6_node
 target_link_libraries(tech_1_6_node inspection_execution_common)
 ament_target_dependencies(tech_1_6_node
   rclcpp
+  rclcpp_action
   std_msgs
   geometry_msgs
   builtin_interfaces

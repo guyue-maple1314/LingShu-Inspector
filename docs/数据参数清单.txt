@@ -23,7 +23,7 @@ imu / foot_force / camera : best_effort + keep_last + depth 1（高频丢帧可�
 task                      : reliable + transient_local + depth 10（任务不可丢）
 event                     : reliable + volatile + depth 10
 
-【三】14 个消息的数据字段（inspection_interfaces/msg/）
+【三】15 个消息的数据字段（inspection_interfaces/msg/）
 ------------------------------------------------------------------------
 RobotState          pose / velocity / battery_level / current_gait / execution_state
 OperatorInstruction source(voice/text) / raw_content
@@ -39,6 +39,7 @@ FusionPose          pose(PoseWithCovariance) / valid_sources[] / localization_st
 SemanticAlarm       detection_event / physical_location / bim_id / slam_id / confidence
 ThermalMeasurement  raw_temperature / compensated_temperature / angle / distance / emissivity / correction_factor / error_state
 AcousticDiagnosis   beam_azimuth / beam_elevation / background_noise_db / output_snr_db / fault_class / confidence
+AcousticFrame       beam_azimuth / beam_elevation / sample_rate / samples[] / valid
 
 【四】九项技术验收阈值（acceptance_thresholds.yaml）
 ------------------------------------------------------------------------
@@ -95,6 +96,16 @@ MPC 激活阈值    默认 Mild 及以上介入
 修正系数域      0.95 ~ 1.05
 角度修正上限    1.10（kDefaultMaxAngleCorrectionFactor；未标定前不放大约 1/cos）
 
+── 1.6 导航 Action（/navigate_goal）──
+目标到达容差    0.10 m（NavigationExecutor::kWaypointTolerance）
+退化速度因子    0.3（kDegradedSpeedFactor）
+导航超时        nav_timeout_sec 默认 60 s（超时 abort）
+
+── 1.9 声纹诊断（Python 侧参数）──
+故障告警置信度  fault_confidence_threshold 默认 0.5（低于只回填类别，不发告警）
+音频帧时延上限  audio_max_age_sec 默认 1.0 s（过期波形不推理）
+阵列无混叠上限  约 5.7 kHz（c/2d，麦克风间距 0.03 m、声速 343 m/s）
+
 ── 1.9 定向声纹诊断 ──
 麦克风数量      8 路（kNumMicrophones）
 同步最大时延    20 ms（max_age_ns = 20,000,000）
@@ -117,12 +128,12 @@ foot_fl / foot_fr / foot_rl / foot_rr
 
 【七】Topic / Service / Action 总表（topics.yaml）
 ------------------------------------------------------------------------
-Topic（14）:
+Topic（15）:
   /robot_state /operator_instruction /inspection_alert /structured_goal
   /task /energy_constraint /task_decision /terrain_observation
   /grating_status
   /corridor_state /fusion_pose /semantic_alarm /thermal_measurement
-  /acoustic_diagnosis
+  /acoustic_diagnosis /acoustic_mono
 Service（2）: /validate_goal /resume_task
 Action（2）:  /execute_task /navigate_goal
 

@@ -26,6 +26,7 @@ set(msg_files
   "msg/SemanticAlarm.msg"
   "msg/ThermalMeasurement.msg"
   "msg/AcousticDiagnosis.msg"
+  "msg/AcousticFrame.msg"
 )
 
 set(srv_files

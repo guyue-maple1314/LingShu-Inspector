@@ -1,7 +1,9 @@
 #include <chrono>
+#include <cmath>
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
 #include "geometry_msgs/msg/pose_with_covariance.hpp"
 #include "geometry_msgs/msg/point.hpp"
 
@@ -16,6 +18,7 @@
 #include "inspection_execution_cpp/tech_1_6/localization_degradation_monitor.hpp"
 #include "inspection_execution_cpp/tech_1_6/navigation_executor.hpp"
 #include "inspection_interfaces/msg/fusion_pose.hpp"
+#include "inspection_interfaces/action/navigate_goal.hpp"
 
 namespace inspection_execution {
 namespace tech_1_6 {
@@ -35,9 +38,13 @@ namespace tech_1_6 {
 /// 与 tech_1_4_node 示例同理，不虚构感知结果。
 class Tech16Node : public rclcpp::Node {
  public:
+  using NavigateGoal = inspection_interfaces::action::NavigateGoal;
+  using GoalHandleNavigate = rclcpp_action::ServerGoalHandle<NavigateGoal>;
+
   Tech16Node() : rclcpp::Node(node_names::kTech1_6Node) {
     this->declare_parameter("sync_tolerance_ms", 5.0);
     this->declare_parameter("control_period_ms", 100);
+    this->declare_parameter("nav_timeout_sec", 60.0);
 
     // 注入默认 FakeLocalizerBackend（不虚构 SLAM，确定性输出）
     auto backend = std::make_shared<FakeLocalizerBackend>();
@@ -63,6 +70,14 @@ class Tech16Node : public rclcpp::Node {
 
     fusion_pub_ = this->create_publisher<inspection_interfaces::msg::FusionPose>(
         topic_names::kFusionPose, 10);
+
+    // /navigate_goal：动态目标与重规划路径的导航（1.1/1.6）
+    nav_action_server_ = rclcpp_action::create_server<NavigateGoal>(
+        this, topic_names::kNavigateGoalAction,
+        std::bind(&Tech16Node::HandleNavGoal, this, std::placeholders::_1,
+                  std::placeholders::_2),
+        std::bind(&Tech16Node::HandleNavCancel, this, std::placeholders::_1),
+        std::bind(&Tech16Node::HandleNavAccepted, this, std::placeholders::_1));
 
     const int period_ms = this->get_parameter("control_period_ms").as_int();
     timer_ = this->create_wall_timer(
@@ -160,6 +175,119 @@ class Tech16Node : public rclcpp::Node {
     msg.valid_sources = pose_out.valid_sources;
     msg.localization_state = pose_out.localization_state;
     fusion_pub_->publish(msg);
+
+    // 导航 Action 反馈与终态（与 Tick 同线程驱动，无需额外加锁）
+    UpdateNavigationAction(pose_out);
+  }
+
+  // ---- /navigate_goal Action 服务端 ----
+  rclcpp_action::GoalResponse HandleNavGoal(
+      const rclcpp_action::GoalUUID& /*uuid*/,
+      std::shared_ptr<const NavigateGoal::Goal> goal) {
+    const auto& p = goal->target_pose.pose.position;
+    if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)) {
+      RCLCPP_WARN(get_logger(), "rejecting navigate_goal: non-finite target pose");
+      return rclcpp_action::GoalResponse::REJECT;
+    }
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+  }
+
+  rclcpp_action::CancelResponse HandleNavCancel(
+      const std::shared_ptr<GoalHandleNavigate> /*goal_handle*/) {
+    RCLCPP_INFO(get_logger(), "navigate_goal cancel accepted");
+    return rclcpp_action::CancelResponse::ACCEPT;
+  }
+
+  void HandleNavAccepted(const std::shared_ptr<GoalHandleNavigate> goal_handle) {
+    const auto& p = goal_handle->get_goal()->target_pose.pose.position;
+    NavWaypoint wp;
+    wp.x = p.x;
+    wp.y = p.y;
+    wp.z = p.z;
+    wp.floor_id = 0;
+
+    if (!nav_executor_.LoadPath({wp}) || !nav_executor_.Start()) {
+      auto result = std::make_shared<NavigateGoal::Result>();
+      result->success = false;
+      result->message = "failed to load navigation target";
+      goal_handle->abort(result);
+      return;
+    }
+
+    nav_goal_handle_ = goal_handle;
+    nav_goal_start_ = this->now();
+    RCLCPP_INFO(get_logger(), "navigate_goal accepted: (%.2f, %.2f, %.2f)", p.x,
+                p.y, p.z);
+  }
+
+  void UpdateNavigationAction(const FusionPoseOutput& pose) {
+    if (!nav_goal_handle_) {
+      return;
+    }
+    const auto goal_handle = nav_goal_handle_;
+
+    if (goal_handle->is_canceling()) {
+      auto result = std::make_shared<NavigateGoal::Result>();
+      result->success = false;
+      result->message = "canceled";
+      goal_handle->canceled(result);
+      nav_goal_handle_.reset();
+      return;
+    }
+
+    const auto snapshot = nav_executor_.Update(pose);
+
+    auto feedback = std::make_shared<NavigateGoal::Feedback>();
+    feedback->current_pose.pose.position.x = pose.x;
+    feedback->current_pose.pose.position.y = pose.y;
+    feedback->current_pose.pose.position.z = pose.z;
+    feedback->current_pose.pose.orientation.w = pose.qw;
+    feedback->current_pose.pose.orientation.x = pose.qx;
+    feedback->current_pose.pose.orientation.y = pose.qy;
+    feedback->current_pose.pose.orientation.z = pose.qz;
+    feedback->state = NavigationStateName(snapshot.state);
+    goal_handle->publish_feedback(feedback);
+
+    if (snapshot.state == NavigationState::kCompleted) {
+      auto result = std::make_shared<NavigateGoal::Result>();
+      result->success = true;
+      result->message = "target reached";
+      goal_handle->succeed(result);
+      nav_goal_handle_.reset();
+      return;
+    }
+    if (snapshot.state == NavigationState::kFailed) {
+      auto result = std::make_shared<NavigateGoal::Result>();
+      result->success = false;
+      result->message = "navigation failed";
+      goal_handle->abort(result);
+      nav_goal_handle_.reset();
+      return;
+    }
+
+    const double elapsed = (this->now() - nav_goal_start_).seconds();
+    if (elapsed > this->get_parameter("nav_timeout_sec").as_double()) {
+      auto result = std::make_shared<NavigateGoal::Result>();
+      result->success = false;
+      result->message = "navigation timeout";
+      goal_handle->abort(result);
+      nav_goal_handle_.reset();
+      RCLCPP_WARN(get_logger(), "navigate_goal aborted: timeout after %.1fs",
+                  elapsed);
+    }
+  }
+
+  static const char* NavigationStateName(NavigationState state) {
+    switch (state) {
+      case NavigationState::kIdle: return "idle";
+      case NavigationState::kNavigating: return "navigating";
+      case NavigationState::kOnStairs: return "on_stairs";
+      case NavigationState::kFloorTransition: return "floor_transition";
+      case NavigationState::kDegradedPause: return "degraded_pause";
+      case NavigationState::kCompleted: return "completed";
+      case NavigationState::kFailed: return "failed";
+    }
+    return "unknown";
   }
 
   MultiSensorSynchronizer synchronizer_{MultiSensorSynchronizer::kDefaultToleranceMs};
@@ -174,6 +302,9 @@ class Tech16Node : public rclcpp::Node {
 
   rclcpp::Publisher<inspection_interfaces::msg::FusionPose>::SharedPtr fusion_pub_{};
   rclcpp::TimerBase::SharedPtr timer_{};
+  rclcpp_action::Server<NavigateGoal>::SharedPtr nav_action_server_{};
+  std::shared_ptr<GoalHandleNavigate> nav_goal_handle_{};
+  rclcpp::Time nav_goal_start_{0, 0, RCL_ROS_TIME};
 };
 
 }  // namespace tech_1_6

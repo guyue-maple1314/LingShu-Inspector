@@ -14,6 +14,7 @@ FUSION_POSE = "/fusion_pose"
 SEMANTIC_ALARM = "/semantic_alarm"
 THERMAL_MEASUREMENT = "/thermal_measurement"
 ACOUSTIC_DIAGNOSIS = "/acoustic_diagnosis"
+ACOUSTIC_MONO = "/acoustic_mono"
 
 IMU = "/imu"
 FOOT_FORCE = "/foot_force"

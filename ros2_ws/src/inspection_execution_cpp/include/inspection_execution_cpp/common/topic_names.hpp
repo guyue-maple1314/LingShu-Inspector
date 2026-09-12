@@ -18,6 +18,7 @@ inline constexpr const char* kFusionPose = "/fusion_pose";
 inline constexpr const char* kSemanticAlarm = "/semantic_alarm";
 inline constexpr const char* kThermalMeasurement = "/thermal_measurement";
 inline constexpr const char* kAcousticDiagnosis = "/acoustic_diagnosis";
+inline constexpr const char* kAcousticMono = "/acoustic_mono";
 
 // 原始传感器 Topic
 inline constexpr const char* kImu = "/imu";
