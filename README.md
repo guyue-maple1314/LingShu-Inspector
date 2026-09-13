@@ -1,4 +1,4 @@
-# 四足机械狗巡检机器人（ROS 2 三层架构）
+# 四足机械人巡检系统（ROS 2 三层架构）
 
 Copyright (c) 2026 青岛港湾职业技术学院 · 灵枢智行团队（qdgw / lszx_byc）（联系邮箱：xyt1351325@hotmail.com）。保留所有权利，授权条款见 [LICENSE](LICENSE)。
 
